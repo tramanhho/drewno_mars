@@ -134,6 +134,22 @@ enum Token {
     //illegal
     #[regex(r#"[^\s]"#, priority = 1)]
     ILLEGAL
+
+    //string literal with bad escape sequence ignored
+    #[regex(r#""(\\[nt"\\]|[^\n"\\])*(\\[^nt"\\])(\\[nt"\\]|[^\n"\\])*""#, priority = 10)]
+    STRINGLITERALBADESCAPE,
+
+    //unterminated string literal ignored \n \t \" \\
+    #[regex(r#""(\\[nt"\\]|[^\n"\\])*"#, priority = 10)]
+    STRINGLITERALUNTERMINATED,
+
+    //untermintated string literal with bad escape sequence ignored
+    #[regex(r#""(\\[nt"\\]|[^\n"\\])*(\\[^nt"\\])(\\[nt"\\]|[^\n"\\])*"#, priority = 10)]
+    STRINGLITERALUNTERMINATEDBADESCAPE,
+
+    //interger literal overflow (int max is 2147483647)
+    #[regex(r#"([1-9][0-9]{10}|[3-9][0-9]{9}|2[2-9][0-9]{8}|21[5-9][0-9]{7}|214[8-9][0-9]{6}|2147[5-9][0-9]{5}|21474[9][0-9]{4}|214748[4-9][0-9]{3}|2147483[7-9][0-9]{2}|21474836[5-9][0-9]|214748364[8-9])([0-9])*"#, priority = 10)]
+    INTLITERALOVERFLOW
 }
 
 fn error_msg(token_type:Token) -> &'static str {
