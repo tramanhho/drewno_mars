@@ -58,6 +58,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         if output != "" {       tokens.write_all(output.as_bytes()).expect("Error writing to file.");      }
         if error  != "" { io::stderr().write_all(error.as_bytes()).expect("Error writing to error file."); }
     }
-
+    let eof = format!("EOF [{},1]", scanner.row + 1);
+    tokens.write_all(eof.as_bytes()).expect("Error writing to file.");
     Ok(())
 }
