@@ -16,7 +16,6 @@ impl Scanner {
     pub fn tokenize_line(&mut self, stream: &String) -> (String, String) {
         self.col += 1;
         let mut lex: logos::Lexer<'_, Token> = Token::lexer(&stream);
-        let span = &lex.span();
 
         // initialize return texts
         let mut text: String = "".to_owned();
@@ -49,10 +48,10 @@ impl Scanner {
                     Token::STRINGLITERALUNTERMINATEDBADESCAPE => "Unterminated string literal with bad escape sequence detected",
                     _ => ""
                 };
-                let token_error = format!("FATAL [{},{}] - [{},{}]: {}{}", self.col, span.start, self.col, span.end, msg, value);
+                let token_error = format!("FATAL [{},{}] - [{},{}]: {}{}", self.col, &lex.span().start, self.col, &lex.span().end, msg, value);
                 errors = format!("{}\n{}", errors, token_error);
             } else {
-                text = format!("{}\n{:#?}:{} [{},{:#?}]", text, token_type, value, self.col, span.start);
+                text = format!("{}\n{:#?}:{} [{},{:#?}]", text, token_type, value, self.col, &lex.span().start);
             }
         }
         (text, errors) // <== will need to uncomment this to return correctly
