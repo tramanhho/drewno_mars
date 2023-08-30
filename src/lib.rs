@@ -1,6 +1,6 @@
 use std::error::Error;
 use std::fs::File;
-use std::io::{BufRead, BufReader, BufWriter, Write};
+use std::io::{self, BufRead, BufReader, BufWriter, Write};
 
 mod scanner;
 use scanner::Scanner;
@@ -15,7 +15,6 @@ impl Config {
     pub fn build(
         mut args: impl Iterator<Item = String>,
     ) -> Result<Config, &'static str> {
-        // println!("{}", args);
         args.next();
 
         let input_file = match args.next() {
@@ -55,11 +54,9 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     // processing 
     for line in input.lines() {
         let line = line.expect("Unable to read line");
-        match Scanner::tokenize_line(&mut scanner, line) {
-            Ok(output) => tokens.write_all(output.as_bytes())?,
-            Err(e) => eprintln!("{}", e)
-        }
-        
+        let (output, error) = scanner.tokenize_line(&line);
+        if output != "" {       tokens.write_all(output.as_bytes()).expect("Error writing to file.");      }
+        if error  != "" { io::stderr().write_all(error.as_bytes()).expect("Error writing to error file."); }
     }
 
     Ok(())

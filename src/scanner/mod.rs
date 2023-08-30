@@ -1,32 +1,23 @@
-use std::error::Error;
+use logos::Logos;
+use crate::scanner::tokens::Token;
 mod tokens;
+
+pub struct Scanner {
+    col: i32
+}
 
 impl Scanner {
     pub fn new() -> Scanner {
         Scanner {
-            row: 0,
             col: 0
         }
     }
 
-    // pub fn tokenize_line(&mut self, line: String) -> Result<String, &'static str> {
-    //     println!("{}: {}", self.row, line);
-    //     self.row += 1;
-        
-    //     let nyaow = Position::new(1, 2, 3, 4);
-    //     println!("{}", Position::start_to_string(&nyaow));
+    pub fn tokenize_line(&mut self, stream: &String) -> (String, String) {
+        self.col += 1;
+        let mut lex: logos::Lexer<'_, Token> = Token::lexer(&stream);
+        let span = &lex.span();
 
-    //     Ok("nice\n".to_string())
-
-        
-    //     // if (false) {
-    //     //     Err(error_handler(1))
-    //     // }
-    // }
-
-    pub fn tokenize_line(&mut self, stream: String, col: u32) -> (String, String){
-        let mut lex: logos::Lexer<'_, Token> = Token::lexer(stream);
-    
         // initialize return texts
         let mut text: String = "".to_owned();
         let mut errors: String = "".to_owned();
@@ -47,18 +38,26 @@ impl Scanner {
                 => &lex.slice(),
                 _ => ""
             };
-    
+            let illegals = [Token::INTLITERALOVERFLOW, Token::ILLEGAL, Token::STRINGLITERALBADESCAPE, Token::STRINGLITERALUNTERMINATED, Token::STRINGLITERALUNTERMINATEDBADESCAPE];
             // add to whichever text. err needs an additional error msg so i moved it to a handler
-            if token_type == Token::ILLEGAL {
-                errors = format!("{}\n{}", errors, error_handler(token_type, value, col, &lex.span()));
+            if illegals.contains(&token_type) {
+                let msg = match token_type {
+                    Token::INTLITERALOVERFLOW => "Integer literal overflow",
+                    Token::ILLEGAL => "Illegal character ",
+                    Token::STRINGLITERALBADESCAPE => "String literal with bad escape sequence detected",
+                    Token::STRINGLITERALUNTERMINATED => "Unterminated string literal detected",
+                    Token::STRINGLITERALUNTERMINATEDBADESCAPE => "Unterminated string literal with bad escape sequence detected",
+                    _ => ""
+                };
+                let token_error = format!("FATAL [{},{}] - [{},{}]: {}{}", self.col, span.start, self.col, span.end, msg, value);
+                errors = format!("{}\n{}", errors, token_error);
             } else {
-                text = format!("{}\n{:#?}{} [{},{:#?}]", text, token_type, value, col, &lex.span().start);
+                text = format!("{}\n{:#?}:{} [{},{:#?}]", text, token_type, value, self.col, span.start);
             }
         }
-        println!("{}", text);
-        println!("{}", errors);
-
         (text, errors) // <== will need to uncomment this to return correctly
     }
 }
+
+
 

@@ -1,10 +1,9 @@
 use logos::Logos;
-use std::ops::Range;
 
 #[derive(Logos, Debug, PartialEq)]
 #[logos(skip r"[ \t\n\f]+")]
 #[logos(skip r#"//.*[\n]?"#)]
-enum Token {
+pub enum Token {
     //Keywords
     #[token("and", priority = 3)]
     AND,
@@ -133,21 +132,22 @@ enum Token {
 
     //illegal
     #[regex(r#"[^\s]"#, priority = 1)]
-    ILLEGAL
+    ILLEGAL,
+
+    //string literal with bad escape sequence ignored
+    #[regex(r#""(\\[nt"\\]|[^\n"\\])*(\\[^nt"\\])(\\[nt"\\]|[^\n"\\])*""#, priority = 3)]
+    STRINGLITERALBADESCAPE,
+
+    //unterminated string literal ignored \n \t \" \\
+    #[regex(r#""(\\[nt"\\]|[^\n"\\])*"#, priority = 3)]
+    STRINGLITERALUNTERMINATED,
+
+    //untermintated string literal with bad escape sequence ignored
+    #[regex(r#""(\\[nt"\\]|[^\n"\\])*(\\[^nt"\\])(\\[nt"\\]|[^\n"\\])*"#, priority = 3)]
+    STRINGLITERALUNTERMINATEDBADESCAPE,
+
+    //interger literal overflow (int max is 2147483647)
+    #[regex(r#"([1-9][0-9]{10}|[3-9][0-9]{9}|2[2-9][0-9]{8}|21[5-9][0-9]{7}|214[8-9][0-9]{6}|2147[5-9][0-9]{5}|21474[9][0-9]{4}|214748[4-9][0-9]{3}|2147483[7-9][0-9]{2}|21474836[5-9][0-9]|214748364[8-9])([0-9])*"#, priority = 3)]
+    INTLITERALOVERFLOW
 }
 
-fn error_msg(token_type:Token) -> &'static str {
-    match token_type {
-        // Token::OVERFLOW => "Integer literal overflow",
-        Token::ILLEGAL => "Illegal character ",
-        // Token::BADESC => "String literal with bad escape sequence detected",
-        // Token::UNTERM => "Unterminated string literal detected",
-        // Token::UNTERMBADESC => "Unterminated string literal with bad escape sequence detected",
-        _ => ""
-    }
-}
-
-fn error_handler(token_type : Token, val: &'static str, col: i32, span: &Range<usize> ) -> String {
-    let msg = error_msg(token_type);
-    format!("FATAL [{},{}] - [{},{}]: {}{}", col, span.start, col, span.end, msg, val)
-}
