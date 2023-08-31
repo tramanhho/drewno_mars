@@ -16,8 +16,6 @@ To both compile and run the program, enter the following command:
 $ cargo run --quiet <infile.dm> -t <tokens.txt> 2> <errors.txt>
 ```
 
-
-
 Here is an example input: 
 ```shell
 $ cargo run --quiet ./src/io/input2.dm -t ./src/io/tokens.txt 2>./src/io/errors.txt

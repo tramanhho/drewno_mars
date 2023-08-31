@@ -1,6 +1,6 @@
 use std::error::Error;
 use std::fs::File;
-use std::io::{self, BufRead, BufReader, BufWriter, Write};
+use std::io::{self, BufWriter, Write};
 
 mod scanner;
 use scanner::Scanner;
@@ -42,9 +42,8 @@ impl Config {
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     // read config
-    let input = File::open(config.input_file).expect("Unable to open file");
-    let input = BufReader::new(input);
-
+    let input = std::fs::read_to_string(config.input_file)?;
+    let lines: Vec<&str> = input.split("\r\n").collect();
     // write config 
     let tokens = File::create(config.output_file).expect("Unable to create file");
     let mut tokens = BufWriter::new(tokens);
@@ -52,13 +51,18 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     // new scanner 
     let mut scanner = Scanner::new();
     // processing 
-    for line in input.lines() {
-        let line = line.expect("Unable to read line");
-        let (output, error) = scanner.tokenize_line(&line);
+    for line in lines.iter() {
+        let (output, error) = scanner.tokenize_line(*line);
         if output != "" {       tokens.write_all(output.as_bytes()).expect("Error writing to file.");      }
         if error  != "" { io::stderr().write_all(error.as_bytes()).expect("Error writing to error file."); }
     }
-    let eof = format!("EOF [{},1]", scanner.row + 1);
+    
+    let eof = if *lines.last().unwrap() == "" {
+        format!("EOF [{},1]", scanner.row + 1)
+    } else {
+        format!("EOF [{},{}]", scanner.row, scanner.last_col)
+    };
+    
     tokens.write_all(eof.as_bytes()).expect("Error writing to file.");
     Ok(())
 }

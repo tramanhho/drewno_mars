@@ -3,19 +3,21 @@ use crate::scanner::tokens::Token;
 mod tokens;
 
 pub struct Scanner {
-    pub row: u32
+    pub row: u32,
+    pub last_col: usize,
 }
 
 impl Scanner {
     pub fn new() -> Scanner {
         Scanner {
-            row: 0
+            row: 0,
+            last_col: 0,
         }
     }
 
-    pub fn tokenize_line(&mut self, stream: &String) -> (String, String) {
+    pub fn tokenize_line(&mut self, stream: &str) -> (String, String) {
         self.row += 1;
-        let mut lex: logos::Lexer<'_, Token> = Token::lexer(&stream);
+        let mut lex: logos::Lexer<'_, Token> = Token::lexer(stream);
 
         // initialize return texts
         let mut text: String = "".to_owned();
@@ -39,7 +41,7 @@ impl Scanner {
                 _ => ""
             };
             let illegals = [Token::INTLITERALOverflow, Token::Illegal, Token::STRINGLITERALBadEscape, Token::STRINGLITERALUnterminated, Token::STRINGLITERALUnterminatedBadEscape];
-            // add to whichever text. err needs an additional error msg so i moved it to a handler
+            // add to whichever text
             if illegals.contains(&token_type) {
                 let msg = match token_type {
                     Token::INTLITERALOverflow => "Integer literal overflow",
@@ -54,8 +56,9 @@ impl Scanner {
             } else {
                 text = format!("{}{:#?}:{} [{},{:#?}]\n", text, token_type, value, self.row, span_start);
             }
+            self.last_col = span_end;
         }
-        (text, errors) // <== will need to uncomment this to return correctly
+        (text, errors)
     }
 }
 
