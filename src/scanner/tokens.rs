@@ -1,9 +1,57 @@
 use logos::Logos;
 
-#[derive(Logos, Debug, PartialEq)]
+//use std::num::ParseIntError;
+
+// #[derive(Debug, Default, Logos, Clone, PartialEq)]
+// pub enum LexingError {
+//     InvalidInteger(String),
+//
+//     #[default]
+//     #[regex(r#"[^\s]"#, priority = 1)]
+//     Illegal,
+// }
+
+// /// Error type returned by calling `lex.slice().parse()` to i32.
+// impl From<ParseIntError> for LexingError {
+//     fn from(err: ParseIntError) -> Self {
+//         use std::num::IntErrorKind::*;
+//         match err.kind() {
+//             PosOverflow | NegOverflow => LexingError::InvalidInteger("overflow error".to_owned()),
+//             _ => LexingError::InvalidInteger("other error".to_owned()),
+//         }
+//     }
+// }
+
+pub struct Token {
+    pub start: usize,
+    pub end: usize,
+    pub token_type: TokenType,
+    pub value: String
+}
+
+impl Token {
+    pub fn new(lex: &mut logos::Lexer<'_, TokenType>, token_type: TokenType ) -> Token {
+        Token {
+            start: lex.span().start + 1,
+            end: lex.span().end + 1,
+            value: match &token_type {
+                TokenType::ID | 
+                TokenType::INTLITERAL | 
+                TokenType::STRINGLITERAL | 
+                TokenType::Illegal
+                => lex.slice().to_string(),
+                _ => "".to_string()
+            },
+            token_type: token_type,
+        }
+    }
+}
+
+#[derive(Debug, Logos, PartialEq)]
+//#[logos(error = LexingError)]
 #[logos(skip r"[ \t\n\f]+")]
 #[logos(skip r#"//.*[\n]?"#)]
-pub enum Token {
+pub enum TokenType {
     //Keywords
     #[token("and", priority = 3)]
     AND,
@@ -59,6 +107,9 @@ pub enum Token {
     //Identifiers and Literals
     #[regex(r"[a-zA-Z_][0-9a-zA-Z_]*", priority = 2)]
     ID,
+
+    // #[regex(r"[0-9]+", priority = 2, callback = |lex| lex.slice().parse())]
+    // INTLITERAL(i32),
 
     #[regex(r"[0-9]+", priority = 2)]
     INTLITERAL,
@@ -139,14 +190,15 @@ pub enum Token {
     STRINGLITERALBadEscape,
 
     //unterminated string literal ignored \n \t \" \\
-    #[regex(r#""(\\[nt"\\]|[^\n"\\])*"#, priority = 3)]
+    //#[regex(r#""(\\[nt"\\]|[^\n"\\])*"#, priority = 3)]
+    #[regex(r#""[^\s]"#, priority = 3)]
     STRINGLITERALUnterminated,
     
     //untermintated string literal with bad escape sequence ignored
     #[regex(r#""((\\[nt"\\]|[^\n"\\])*(\\[^nt"\\])(\\[nt"\\]|[^\n"\\])*)+"#, priority = 3)]
     STRINGLITERALUnterminatedBadEscape,
 
-    //interger literal overflow (int max is 2147483647)
+    // //interger literal overflow (int max is 2147483647)
     #[regex(r#"([1-9][0-9]{10}|[3-9][0-9]{9}|2[2-9][0-9]{8}|21[5-9][0-9]{7}|214[8-9][0-9]{6}|2147[5-9][0-9]{5}|21474[9][0-9]{4}|214748[4-9][0-9]{3}|2147483[7-9][0-9]{2}|21474836[5-9][0-9]|214748364[8-9])([0-9])*"#, priority = 3)]
     INTLITERALOverflow
 }

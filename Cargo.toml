@@ -7,3 +7,8 @@ edition = "2021"
 
 [dependencies]
 logos = "0.13.0"
+
+# Example of customizing binaries in Cargo.toml.
+# [[bin]]
+# name = "dmc"
+# path = "src/main.rs" 

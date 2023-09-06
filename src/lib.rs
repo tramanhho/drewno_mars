@@ -52,7 +52,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let mut scanner = Scanner::new();
     // processing 
     for line in lines.iter() {
-        let (output, error) = scanner.tokenize_line(*line);
+        let (output, error) = scanner.tokenize_line(&line);
         if output != "" {       tokens.write_all(output.as_bytes()).expect("Error writing to file.");      }
         if error  != "" { io::stderr().write_all(error.as_bytes()).expect("Error writing to error file."); }
     }

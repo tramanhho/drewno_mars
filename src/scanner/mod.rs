@@ -1,5 +1,6 @@
 use logos::Logos;
 use crate::scanner::tokens::Token;
+use crate::scanner::tokens::TokenType;
 mod tokens;
 
 pub struct Scanner {
@@ -17,50 +18,51 @@ impl Scanner {
 
     pub fn tokenize_line(&mut self, stream: &str) -> (String, String) {
         self.row += 1;
-        let mut lex: logos::Lexer<'_, Token> = Token::lexer(stream);
-
+        let mut lex: logos::Lexer<'_, TokenType> = TokenType::lexer(stream);
+        
         // initialize return texts
         let mut text: String = "".to_owned();
         let mut errors: String = "".to_owned();
-    
+
         // iterate through tokens that logos lexer found 
         loop {
             let token_type = match lex.next() {
                 Some(v) => v.unwrap(),
-                None => break
+                None => break 
             };
-            let span_start = &lex.span().start + 1;
-            let span_end = &lex.span().end + 1;
-            //optional value if we need to keep it 
-            let value = match token_type {
-                Token::ID | 
-                Token::INTLITERAL | 
-                Token::STRINGLITERAL | 
-                Token::Illegal
-                => &lex.slice(),
-                _ => ""
-            };
-            let illegals = [Token::INTLITERALOverflow, Token::Illegal, Token::STRINGLITERALBadEscape, Token::STRINGLITERALUnterminated, Token::STRINGLITERALUnterminatedBadEscape];
-            // add to whichever text
-            if illegals.contains(&token_type) {
-                let msg = match token_type {
-                    Token::INTLITERALOverflow => "Integer literal overflow",
-                    Token::Illegal => "Illegal character ",
-                    Token::STRINGLITERALBadEscape => "String literal with bad escape sequence detected",
-                    Token::STRINGLITERALUnterminated => "Unterminated string literal detected",
-                    Token::STRINGLITERALUnterminatedBadEscape => "Unterminated string literal with bad escape sequence detected",
-                    _ => ""
-                };
-                let token_error = format!("FATAL [{},{}] - [{},{}]: {}{}\n", self.row, span_start, self.row, span_end, msg, value);
-                errors = format!("{}{}", errors, token_error);
+
+            let token = Token::new(&mut lex, token_type);
+            //let illegals = [TokenType::INTLITERALOverflow, TokenType::Illegal, TokenType::STRINGLITERALBadEscape, TokenType::STRINGLITERALUnterminated, TokenType::STRINGLITERALUnterminatedBadEscape];
+            let illegals = [TokenType::STRINGLITERALBadEscape, TokenType::STRINGLITERALUnterminated, TokenType::STRINGLITERALUnterminatedBadEscape];
+            //add to whichever text
+            
+            if illegals.contains(&token.token_type) {
+                errors = format!("{}{}", errors, self.error_msg(&token));
             } else {
-                text = format!("{}{:#?}:{} [{},{:#?}]\n", text, token_type, value, self.row, span_start);
+                text = format!("{}{}", text, self.token_msg(&token));
             }
-            self.last_col = span_end;
+            self.last_col = token.end;
         }
         (text, errors)
     }
+
+    fn token_msg(&self, token: &Token) -> String {
+        format!("{:#?}:{} [{},{:#?}]\n", token.token_type, token.value, self.row, token.start)
+    }
+
+    fn error_msg(&self, token: &Token) -> String {
+        format!("FATAL [{},{}] - [{},{}]: {}{}\n", self.row, token.start, self.row, token.end, error_handler(&token.token_type), token.value)
+    }
+    
 }
 
-
-
+fn error_handler(token_type : &TokenType ) -> &str {
+    match token_type {
+        TokenType::INTLITERALOverflow => "Integer literal overflow",
+        TokenType::Illegal => "Illegal character ",
+        TokenType::STRINGLITERALBadEscape => "String literal with bad escape sequence detected",
+        TokenType::STRINGLITERALUnterminated => "Unterminated string literal detected",
+        TokenType::STRINGLITERALUnterminatedBadEscape => "Unterminated string literal with bad escape sequence detected",
+        _ => ""
+    }
+}
