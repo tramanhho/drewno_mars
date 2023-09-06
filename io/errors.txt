@@ -1,37 +1,7 @@
-error[E0449]: visibility qualifiers are not permitted here
-  --> src/scanner/tokens.rs:13:5
-   |
-13 |     pub fn from(err: ParseIntError) -> Self {
-   |     ^^^
-   |
-   = note: trait items always share the visibility of their trait
-
-error[E0412]: cannot find type `ParseIntError` in this scope
-  --> src/scanner/tokens.rs:12:11
-   |
-12 | impl From<ParseIntError> for LexingError {
-   |           ^^^^^^^^^^^^^ not found in this scope
-   |
-help: consider importing one of these items
-   |
-1  + use core::num::ParseIntError;
-   |
-1  + use std::num::ParseIntError;
-   |
-
-error[E0412]: cannot find type `ParseIntError` in this scope
-  --> src/scanner/tokens.rs:13:22
-   |
-13 |     pub fn from(err: ParseIntError) -> Self {
-   |                      ^^^^^^^^^^^^^ not found in this scope
-   |
-help: consider importing one of these items
-   |
-1  + use core::num::ParseIntError;
-   |
-1  + use std::num::ParseIntError;
-   |
-
-Some errors have detailed explanations: E0412, E0449.
-For more information about an error, try `rustc --explain E0412`.
-error: could not compile `compilers_project1` (lib) due to 3 previous errors
+FATAL [1,1] - [1,5]: String literal with bad escape sequence detected
+FATAL [1,6] - [1,10]: String literal with bad escape sequence detected
+FATAL [1,11] - [1,15]: String literal with bad escape sequence detected
+FATAL [1,29] - [1,33]: String literal with bad escape sequence detected
+FATAL [1,47] - [1,51]: String literal with bad escape sequence detected
+FATAL [1,52] - [1,56]: String literal with bad escape sequence detected
+FATAL [1,70] - [1,74]: String literal with bad escape sequence detected

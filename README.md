@@ -1,4 +1,4 @@
-# compilers-project1
+# drewno_mars
 
 Drew, 
 

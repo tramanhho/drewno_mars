@@ -1,4 +1,4 @@
-projectname = compilers_project1
+projectname = drewno_mars
 
 all: 
 	cargo build; cd target/debug; mv ${projectname} ../../dmc; cd ../.. 
