@@ -1,5 +1,5 @@
 use logos::Logos;
-
+use std::fmt;
 //use std::num::ParseIntError;
 
 // #[derive(Debug, Default, Logos, Clone, PartialEq)]
@@ -22,6 +22,13 @@ use logos::Logos;
 //     }
 // }
 
+impl fmt::Display for Token {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+#[derive(Debug)]
 pub struct Token {
     pub start: usize,
     pub end: usize,
@@ -47,7 +54,7 @@ impl Token {
     }
 }
 
-#[derive(Debug, Logos, PartialEq)]
+#[derive(Logos, Clone, Debug, PartialEq)]
 //#[logos(error = LexingError)]
 #[logos(skip r"[ \t\n\f]+")]
 #[logos(skip r#"//.*[\n]?"#)]
@@ -200,5 +207,5 @@ pub enum TokenType {
 
     // //interger literal overflow (int max is 2147483647)
     #[regex(r#"([1-9][0-9]{10}|[3-9][0-9]{9}|2[2-9][0-9]{8}|21[5-9][0-9]{7}|214[8-9][0-9]{6}|2147[5-9][0-9]{5}|21474[9][0-9]{4}|214748[4-9][0-9]{3}|2147483[7-9][0-9]{2}|21474836[5-9][0-9]|214748364[8-9])([0-9])*"#, priority = 3)]
-    INTLITERALOverflow
+    INTLITERALOverflow,
 }

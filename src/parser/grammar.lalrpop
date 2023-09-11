@@ -1,0 +1,36 @@
+use crate::scanner::{
+    tokens::TokenType,
+    LexicalError,
+};
+
+use crate::parser::ast;
+grammar;
+
+extern {
+  type Location = usize;
+  type Error = LexicalError;
+
+  enum TokenType {
+    //"KeywordVar" => TokenType::KeywordVar,
+    //"print" => TokenType::KeywordPrint,
+    //"identifier" => TokenType::Identifier(<String>),
+    //"int" => TokenType::Integer(<i64>),
+    //"PERFECT" => TokenType::PERFECT;
+    "ID" => TokenType::ID,
+    "POSTDEC" => TokenType::POSTDEC
+    
+  }
+}
+
+// pub loc: Box<ast::ASTloc> = {
+//     id => Box::new(ast::ASTloc::Prod1(<>)),
+//     loc "POSTDEC" id => Box::new(ast::ASTloc::Prod2(<>)),
+// };
+
+pub loc: Box<ast::Terminal> = {
+    id => Box::new(ast::Terminal::ID)
+};
+
+pub id: Box<ast::Terminal> = {
+    "ID" => Box::new(ast::Terminal::ID),
+};
