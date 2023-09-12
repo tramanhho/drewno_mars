@@ -1,7 +1,27 @@
-use logos::{Logos, SpannedIter};
+use logos::Logos;
 use crate::scanner::tokens::Token;
 use crate::scanner::tokens::TokenType;
 pub mod tokens;
+use std::io::{self, Write};
+
+pub fn tokenizer(input: Vec<&str>, mut tokens: Box<dyn Write>) {
+    let mut scanner = Scanner::new();
+
+    // processing 
+    for line in input.iter() {
+        let (output, error) = scanner.tokenize_line(&line);
+        if output != "" {       tokens.write_all(output.as_bytes()).expect("Error writing to file.");      }
+        if error  != "" { io::stderr().write_all(error.as_bytes()).expect("Error writing to error file."); }
+    }
+    
+    let eof = if *input.last().unwrap() == "" {
+        format!("EOF [{},1]", scanner.row + 1)
+    } else {
+        format!("EOF [{},{}]", scanner.row, scanner.last_col)
+    };
+    
+    tokens.write_all(eof.as_bytes()).expect("Error writing to file.");
+}
 
 pub struct Scanner {
     pub row: u32,
@@ -9,7 +29,7 @@ pub struct Scanner {
 }
 
 impl Scanner {
-    pub fn new() -> Scanner {
+    fn new() -> Scanner {
         Scanner {
             row: 0,
             last_col: 0,
@@ -53,7 +73,6 @@ impl Scanner {
     fn error_msg(&self, token: &Token) -> String {
         format!("FATAL [{},{}] - [{},{}]: {}{}\n", self.row, token.start, self.row, token.end, error_handler(&token.token_type), token.value)
     }
-    
 }
 
 fn error_handler(token_type : &TokenType ) -> &str {
@@ -64,52 +83,5 @@ fn error_handler(token_type : &TokenType ) -> &str {
         TokenType::STRINGLITERALUnterminated => "Unterminated string literal detected",
         TokenType::STRINGLITERALUnterminatedBadEscape => "Unterminated string literal with bad escape sequence detected",
         _ => ""
-    }
-}
-
-#[derive(Debug)]
-pub enum LexicalError {
-    InvalidToken,
-}
-
-pub struct Lexer<'input> {
-    // instead of an iterator over characters, we have a token iterator
-    token_stream: SpannedIter<'input, TokenType>,
-}
-
-impl<'input> Lexer<'input> {
-    pub fn new(input: &'input str) -> Self {
-        // the Token::lexer() method is provided by the Logos trait
-        Self { token_stream: TokenType::lexer(input).spanned() }
-    }
-}
-
-// impl<'input> Iterator for Lexer<'input> {
-//     type Item = Result<(usize, TokenType, usize), LexicalError>;
-
-//     fn next(&mut self) -> Option<Result<(usize, TokenType, usize), LexicalError>> {
-//         let x = match self.token_stream.next() {
-//             Some(x) => x,
-//             None => (Ok(TokenType::Illegal), ,
-//         };
-//         //Some(Ok((span.start, token.unwrap(), span.end)))
-//         Some(Ok((0, TokenType::Illegal, 0)))
-//     }
-// }
-
-pub type Spanned<Tok, Loc, Error> = Result<(Loc, Tok, Loc), Error>;
-
-impl<'input> Iterator for Lexer<'input> {
-    type Item = Spanned<TokenType, usize, LexicalError>;
-  
-    fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            match self.token_stream.next() {
-                Some((token, span)) => {
-                    return Some(Ok((span.start, token.unwrap(), span.end)))
-                }
-                None => return None
-            }
-        }
     }
 }

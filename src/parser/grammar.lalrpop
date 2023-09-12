@@ -1,9 +1,6 @@
-use crate::scanner::{
-    tokens::TokenType,
-    LexicalError,
-};
-
+use crate::scanner::tokens::TokenType;
 use crate::parser::ast;
+use crate::parser::lexer::LexicalError;
 grammar;
 
 extern {
@@ -22,15 +19,15 @@ extern {
   }
 }
 
-// pub loc: Box<ast::ASTloc> = {
-//     id => Box::new(ast::ASTloc::Prod1(<>)),
-//     loc "POSTDEC" id => Box::new(ast::ASTloc::Prod2(<>)),
-// };
-
-pub loc: Box<ast::Terminal> = {
-    id => Box::new(ast::Terminal::ID)
+pub loc: Box<ast::ASTloc> = {
+    id => Box::new(ast::ASTloc::Prod1(<>)),
+    loc "POSTDEC" id => Box::new(ast::ASTloc::Prod2(<>)),
 };
 
-pub id: Box<ast::Terminal> = {
-    "ID" => Box::new(ast::Terminal::ID),
+// pub loc: Box<ast::Terminal> = {
+//     id => Box::new(ast::Terminal::ID)
+// };
+
+pub id: Box<ast::ASTid> = {
+    "ID" => TokenType::ID,
 };

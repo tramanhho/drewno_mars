@@ -1,14 +1,18 @@
 use std::path::Path;
 use std::fs::File;
 use std::io::{self, Write};
-use std::iter::Peekable;
 
 mod scanner;
-use scanner::Scanner;
+use scanner::tokenizer;
+
+mod parser;
+use parser::grammar::*;
+use parser::lexer::Lexer;
 
 pub struct Config {
     input: String,
     output: Box<dyn Write>,
+    mode: ProcessMode
 }
 
 pub enum ProcessMode {
@@ -18,9 +22,9 @@ pub enum ProcessMode {
 
 
 impl Config {
-    pub fn build<I: Iterator<Item = String>>(
-        mut args: Peekable<I>,
-    ) -> Result<(Config, ProcessMode), &'static str> {
+    pub fn build(
+        mut args: impl Iterator<Item = String>,
+    ) -> Result<Config, &'static str> {
         let mut mode = None;
         let mut input = None;
         let mut output_file = None;
@@ -68,103 +72,46 @@ impl Config {
             None => Box::new(io::stdout()) as Box<dyn Write>,
         };
 
-        Ok((
-            Config {
-                input: input.unwrap(), 
-                output
-            },
-            mode.unwrap()
-        ))
+        Ok(Config {
+            input: input.unwrap(), 
+            output,
+            mode: mode.unwrap()
+        })
     }
 }
 
-pub fn run(config: Config, mode: ProcessMode) -> Result<(), &'static str> {
-    // read/write config
-    match mode {
-        ProcessMode::Tokenize => tokenize(config),
-        ProcessMode::Parse => parser(config),
-    }
-    
-}
-
-fn tokenize(config: Config) -> Result<(), &'static str> {
+pub fn run(config: Config) {
+    // read config
     let input = match std::fs::read_to_string(config.input) {
         Ok(v) => v,
-        Err(_) => return Err("Unable to read given output file.")
+        Err(_) => panic!("Unable to read given input file.")
     };
-    let lines: Vec<&str> = input.split("\r\n").collect();
-    let mut tokens = config.output;
-    let mut scanner = Scanner::new();
 
-    // processing 
-    for line in lines.iter() {
-        let (output, error) = scanner.tokenize_line(&line);
-        if output != "" {       tokens.write_all(output.as_bytes()).expect("Error writing to file.");      }
-        if error  != "" { io::stderr().write_all(error.as_bytes()).expect("Error writing to error file."); }
-    }
-    
-    let eof = if *lines.last().unwrap() == "" {
-        format!("EOF [{},1]", scanner.row + 1)
-    } else {
-        format!("EOF [{},{}]", scanner.row, scanner.last_col)
+    match config.mode {
+        ProcessMode::Tokenize => {
+            let lines: Vec<&str> = input.split("\r\n").collect();
+            tokenizer(lines, config.output)
+        },
+        ProcessMode::Parse => {
+            // let mut lexer = TokenType::lexer(&input[..]).spanned().map(|(token, range)| {
+            //     Ok::<(usize, TokenType, usize), LexicalError>((range.start, token.unwrap(), range.end))
+            // });
+
+            // loop {
+            //     let token = match lexer.next() {
+            //         Some(x) => x,
+            //         None => break
+            //     };
+            //     dbg!(token.unwrap());
+            // }
+            let lexer = Lexer::new(&input[..]);
+            // let ast = match locParser::new().parse(lexer) {
+            //     Ok(x) => x,
+            //     Err(_) => { panic!("syntax error, Parse failed"); },
+            //     Err(_) => { panic!("syntax error, Parse failed"); },
+            // };
+            let ast = locParser::new().parse(lexer).unwrap();
+            println!("{:?}", ast);
+        },
     };
-    
-    tokens.write_all(eof.as_bytes()).expect("Error writing to file.");
-    Ok(())
 }
-
-use logos::{Logos};
-mod parser;
-use crate::parser::grammar::*;
-use crate::scanner::tokens::TokenType;
-use crate::scanner::LexicalError;
-
-fn parser(config: Config) -> Result<(), &'static str> {
-    let source_code = match std::fs::read_to_string(config.input) {
-        Ok(v) => v,
-        Err(_) => return Err("Unable to read given output file.")
-    };
-
-    let lexer = TokenType::lexer(&source_code[..]).spanned().map(|(token, range)| {
-        Ok::<(usize, TokenType, usize), LexicalError>((range.start, token.unwrap(), range.end))
-    });
-
-    let ast = locParser::new().parse(lexer);
-
-    println!("{:?}", ast);
-
-    Ok(())
-}
-
-// use std::ops::Range;
-// pub fn to_lalr_triple(
-//     (t, r): (TokenType, Range<usize>),
-// ) -> Result<(usize, TokenType, usize), ()> {
-//     if t == TokenType::Illegal {
-//         Err(())
-//     } else {
-//         Ok((r.start, t, r.end))
-//     }
-// }
-
-// #[test]
-// fn homerun() {
-//     // let mut lexer = TokenType::lexer("id--").spanned().map();
-//     // let nya = loop {
-//     //     let (token, range) = match lexer.next() {
-//     //         Some(v) => v,
-//     //         None => break Err(())
-//     //     };
-//     //     let token = token.unwrap();
-
-//     //     break Ok((range.start, token, range.end));
-//     // };
-//     // let lexer = TokenType::lexer("id").spanned().map(to_lalr_triple);
-//     let lexer = TokenType::lexer("id").spanned().map(|(token, range)| {
-//         Ok::<(usize, TokenType, usize), LexicalError>((range.start, token.unwrap(), range.end))
-//     });
-//     // let lexer = Lexer::new("id");
-//     let ast = locParser::new().parse(lexer);
-
-//     println!("{:?}", ast);
-// }
