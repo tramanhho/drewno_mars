@@ -67,8 +67,7 @@ fn error_handler(token_type : &TokenType ) -> &str {
     }
 }
 
-pub type Spanned<Tok, Loc, Error> = Result<(Loc, Tok, Loc), Error>;
-
+#[derive(Debug)]
 pub enum LexicalError {
     InvalidToken,
 }
@@ -85,11 +84,32 @@ impl<'input> Lexer<'input> {
     }
 }
 
-impl<'input> Iterator for Lexer<'input> {
-    type Item = Result<(usize, TokenType, usize), LexicalError>;
+// impl<'input> Iterator for Lexer<'input> {
+//     type Item = Result<(usize, TokenType, usize), LexicalError>;
 
-    fn next(&mut self) -> Option<Result<(usize, TokenType, usize), LexicalError>> {
-        let Some((token, span)) = self.token_stream.next();
-        Some(Ok((span.start, token.unwrap(), span.end)))
+//     fn next(&mut self) -> Option<Result<(usize, TokenType, usize), LexicalError>> {
+//         let x = match self.token_stream.next() {
+//             Some(x) => x,
+//             None => (Ok(TokenType::Illegal), ,
+//         };
+//         //Some(Ok((span.start, token.unwrap(), span.end)))
+//         Some(Ok((0, TokenType::Illegal, 0)))
+//     }
+// }
+
+pub type Spanned<Tok, Loc, Error> = Result<(Loc, Tok, Loc), Error>;
+
+impl<'input> Iterator for Lexer<'input> {
+    type Item = Spanned<TokenType, usize, LexicalError>;
+  
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            match self.token_stream.next() {
+                Some((token, span)) => {
+                    return Some(Ok((span.start, token.unwrap(), span.end)))
+                }
+                None => return None
+            }
+        }
     }
 }

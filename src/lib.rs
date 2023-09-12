@@ -113,20 +113,58 @@ fn tokenize(config: Config) -> Result<(), &'static str> {
     Ok(())
 }
 
-use logos::Lexer;
+use logos::{Logos};
 mod parser;
 use crate::parser::grammar::*;
+use crate::scanner::tokens::TokenType;
+use crate::scanner::LexicalError;
 
 fn parser(config: Config) -> Result<(), &'static str> {
     let source_code = match std::fs::read_to_string(config.input) {
         Ok(v) => v,
         Err(_) => return Err("Unable to read given output file.")
     };
-    let lexer = Lexer::new(&source_code[..]);
-    let parser = locParser::new();
-    let ast = parser.parse(lexer)?;
+
+    let lexer = TokenType::lexer(&source_code[..]).spanned().map(|(token, range)| {
+        Ok::<(usize, TokenType, usize), LexicalError>((range.start, token.unwrap(), range.end))
+    });
+
+    let ast = locParser::new().parse(lexer);
 
     println!("{:?}", ast);
 
     Ok(())
 }
+
+// use std::ops::Range;
+// pub fn to_lalr_triple(
+//     (t, r): (TokenType, Range<usize>),
+// ) -> Result<(usize, TokenType, usize), ()> {
+//     if t == TokenType::Illegal {
+//         Err(())
+//     } else {
+//         Ok((r.start, t, r.end))
+//     }
+// }
+
+// #[test]
+// fn homerun() {
+//     // let mut lexer = TokenType::lexer("id--").spanned().map();
+//     // let nya = loop {
+//     //     let (token, range) = match lexer.next() {
+//     //         Some(v) => v,
+//     //         None => break Err(())
+//     //     };
+//     //     let token = token.unwrap();
+
+//     //     break Ok((range.start, token, range.end));
+//     // };
+//     // let lexer = TokenType::lexer("id").spanned().map(to_lalr_triple);
+//     let lexer = TokenType::lexer("id").spanned().map(|(token, range)| {
+//         Ok::<(usize, TokenType, usize), LexicalError>((range.start, token.unwrap(), range.end))
+//     });
+//     // let lexer = Lexer::new("id");
+//     let ast = locParser::new().parse(lexer);
+
+//     println!("{:?}", ast);
+// }

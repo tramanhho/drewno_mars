@@ -54,7 +54,7 @@ impl Token {
     }
 }
 
-#[derive(Logos, Clone, Debug, PartialEq)]
+#[derive(Logos, Debug, PartialEq, Copy, Clone)]
 //#[logos(error = LexingError)]
 #[logos(skip r"[ \t\n\f]+")]
 #[logos(skip r#"//.*[\n]?"#)]
