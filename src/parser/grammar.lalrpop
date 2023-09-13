@@ -162,19 +162,19 @@ pub stmt: Box<ast::ASTstmt> = {
 
 //exp
 pub exp: Box<ast::ASTexp> = {
-    exp "DASH" term  => Box::new(ast::ASTexp::exp_dash(<>)),
-    exp "CROSS" term  => Box::new(ast::ASTexp::exp_cross(<>)),
-    exp "STAR" term  => Box::new(ast::ASTexp::exp_star(<>)),
-    exp "SLASH" term  => Box::new(ast::ASTexp::exp_slash(<>)),
-    exp "AND" term  => Box::new(ast::ASTexp::exp_and(<>)),
-    exp "OR" term  => Box::new(ast::ASTexp::exp_or(<>)),
-    exp "EQUALS" term  => Box::new(ast::ASTexp::exp_equals(<>)),
-    exp "NOTEQUALS" term  => Box::new(ast::ASTexp::exp_notequals(<>)),
-    exp "GREATER" term  => Box::new(ast::ASTexp::exp_greater(<>)),
-    exp "GREATEREQ" term  => Box::new(ast::ASTexp::exp_greatereq(<>)),
-    exp "LESS" term  => Box::new(ast::ASTexp::exp_less(<>)),
-    exp "LESSEQ" term  => Box::new(ast::ASTexp::exp_lesseq(<>)),
-    "NOT" term  => Box::new(ast::ASTexp::exp_not(<>)), //may need to fix to exp
+    term "DASH" exp  => Box::new(ast::ASTexp::exp_dash(<>)),
+    term "CROSS" exp  => Box::new(ast::ASTexp::exp_cross(<>)),
+    term "STAR" exp  => Box::new(ast::ASTexp::exp_star(<>)),
+    term "SLASH" exp  => Box::new(ast::ASTexp::exp_slash(<>)),
+    term "AND" exp  => Box::new(ast::ASTexp::exp_and(<>)),
+    term "OR" exp  => Box::new(ast::ASTexp::exp_or(<>)),
+    term "EQUALS" exp  => Box::new(ast::ASTexp::exp_equals(<>)),
+    term "NOTEQUALS" exp  => Box::new(ast::ASTexp::exp_notequals(<>)),
+    term "GREATER" exp  => Box::new(ast::ASTexp::exp_greater(<>)),
+    term "GREATEREQ" exp  => Box::new(ast::ASTexp::exp_greatereq(<>)),
+    term "LESS" exp  => Box::new(ast::ASTexp::exp_less(<>)),
+    term "LESSEQ" exp  => Box::new(ast::ASTexp::exp_lesseq(<>)),
+    "NOT" exp  => Box::new(ast::ASTexp::exp_not(<>)), //may need to fix to exp
     "DASH" term  => Box::new(ast::ASTexp::exp_dashterm(<>)),
     term  => Box::new(ast::ASTexp::exp_term(<>)),
 
