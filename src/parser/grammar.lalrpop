@@ -8,26 +8,132 @@ extern {
   type Error = LexicalError;
 
   enum TokenType {
-    //"KeywordVar" => TokenType::KeywordVar,
-    //"print" => TokenType::KeywordPrint,
     //"identifier" => TokenType::Identifier(<String>),
-    //"int" => TokenType::Integer(<i64>),
-    //"PERFECT" => TokenType::PERFECT;
+    "AND" => TokenType::AND,
+    "MAGIC" => TokenType::MAGIC,
+    "BOOL" => TokenType::BOOL,
+    "ELSE" => TokenType::ELSE,
+    "FALSE" => TokenType::FALSE,
+    "IF" => TokenType::IF,
+    "INT" => TokenType::INT,
+    "GIVE" => TokenType::GIVE,
+    "TAKE" => TokenType::TAKE,
+    "OR" => TokenType::OR,
+    "PERFECT" => TokenType::PERFECT,
+    "RETURN" => TokenType::RETURN,
+    "CLASS" => TokenType::CLASS,
+    "TRUE" => TokenType::TRUE,
+    "EXIT" => TokenType::EXIT,
+    "VOID" => TokenType::VOID,
+    "WHILE" => TokenType::WHILE,
     "ID" => TokenType::ID,
-    "POSTDEC" => TokenType::POSTDEC
-    
+    "INTLITERAL" => TokenType::INTLITERAL,
+    "STRINGLITERAL" => TokenType::STRINGLITERAL,
+    "ASSIGN" => TokenType::ASSIGN,
+    "COLON" => TokenType::COLON,
+    "COMMA" => TokenType::COMMA,
+    "CROSS" => TokenType::CROSS,
+    "DASH" => TokenType::DASH,
+    "EQUALS" => TokenType::EQUALS,
+    "GREATER" => TokenType::GREATER,
+    "GREATEREQ" => TokenType::GREATEREQ,
+    "LCURLY" => TokenType::LCURLY,
+    "LESS" => TokenType::LESS,
+    "LESSEQ" => TokenType::LESSEQ,
+    "LPAREN" => TokenType::LPAREN,
+    "NOT" => TokenType::NOT,
+    "NOTEQUALS" => TokenType::NOTEQUALS,
+    "POSTDEC" => TokenType::POSTDEC,
+    "POSTINC" => TokenType::POSTINC,
+    "RCURLY" => TokenType::RCURLY,
+    "RPAREN" => TokenType::RPAREN,
+    "SEMICOL" => TokenType::SEMICOL,
+    "SLASH" => TokenType::SLASH,
+    "STAR" => TokenType::STAR,
   }
 }
 
-pub loc: Box<ast::ASTloc> = {
-    id => Box::new(ast::ASTloc::Prod1(<>)),
-    loc "POSTDEC" id => Box::new(ast::ASTloc::Prod2(<>)),
+//stmtList
+pub stmtList: Box<ast::ASTstmtList> = {
+stmtList stmt "SEMICOL"  => Box::new(ast::ASTstmtList::stmtList_stmtList(<>)),
+stmtList blockStmt  => Box::new(ast::ASTstmtList::stmtList_blockStmt(<>)),
+ => Box::new(ast::ASTstmtList::stmtList_epsilon(<>)),
+}
+
+//blockStmt
+pub blockStmt: Box<ast::ASTblockStmt> = {
+    "WHILE" "LPAREN" exp "RPAREN" "LCURLY" stmtList "RCURLY"  => Box::new(ast::ASTblockStmt::blockStmt_while(<>)),
+    "IF" "LPAREN" exp "RPAREN" "LCURLY" stmtList "RCURLY"  => Box::new(ast::ASTblockStmt::blockStmt_if(<>)),
+    "IF" "LPAREN" exp "RPAREN" "LCURLY" stmtList "RCURLY" "ELSE" "LCURLY" stmtList "RCURLY"  => Box::new(ast::ASTblockStmt::blockStmt_ifelse(<>)),
+}
+
+//stmt
+pub stmt: Box<ast::ASTstmt> = {
+    //varDecl  => Box::new(ast::ASTstmt::stmt_varDecl(<>)),
+    loc "ASSIGN" exp  => Box::new(ast::ASTstmt::stmt_assign(<>)),
+    loc "POSTDEC"  => Box::new(ast::ASTstmt::stmt_postdec(<>)),
+    loc "POSTINC"  => Box::new(ast::ASTstmt::stmt_postinc(<>)),
+    "GIVE" exp  => Box::new(ast::ASTstmt::stmt_give(<>)),
+    "TAKE" loc  => Box::new(ast::ASTstmt::stmt_take(<>)),
+    "RETURN" exp  => Box::new(ast::ASTstmt::stmt_returnexp(<>)),
+    "RETURN"  => Box::new(ast::ASTstmt::stmt_return(<>)),
+    "EXIT"  => Box::new(ast::ASTstmt::stmt_exit(<>)),
+    callExp  => Box::new(ast::ASTstmt::stmt_callExp(<>)),
+}
+
+//exp
+pub exp: Box<ast::ASTexp> = {
+    exp "DASH" term  => Box::new(ast::ASTexp::exp_dash(<>)),
+    exp "CROSS" term  => Box::new(ast::ASTexp::exp_cross(<>)),
+    exp "STAR" term  => Box::new(ast::ASTexp::exp_star(<>)),
+    exp "SLASH" term  => Box::new(ast::ASTexp::exp_slash(<>)),
+    exp "AND" term  => Box::new(ast::ASTexp::exp_and(<>)),
+    exp "OR" term  => Box::new(ast::ASTexp::exp_or(<>)),
+    exp "EQUALS" term  => Box::new(ast::ASTexp::exp_equals(<>)),
+    exp "NOTEQUALS" term  => Box::new(ast::ASTexp::exp_notequals(<>)),
+    exp "GREATER" term  => Box::new(ast::ASTexp::exp_greater(<>)),
+    exp "GREATEREQ" term  => Box::new(ast::ASTexp::exp_greatereq(<>)),
+    exp "LESS" term  => Box::new(ast::ASTexp::exp_less(<>)),
+    exp "LESSEQ" term  => Box::new(ast::ASTexp::exp_lesseq(<>)),
+    "NOT" term  => Box::new(ast::ASTexp::exp_not(<>)), //may need to fix to exp
+    "DASH" term  => Box::new(ast::ASTexp::exp_dashterm(<>)),
+    term  => Box::new(ast::ASTexp::exp_term(<>)),
+
 };
 
-// pub loc: Box<ast::Terminal> = {
-//     id => Box::new(ast::Terminal::ID)
-// };
+//callExp
+pub callExp: Box<ast::ASTcallExp> = {
+    id "LPAREN" "RPAREN" => Box::new(ast::ASTcallExp::callExp_fn(<>)),
+    id "LPAREN" actualsList "RPAREN" => Box::new(ast::ASTcallExp::callExp_fnargs(<>)),
+};
 
+//actualsList
+pub actualsList: Box<ast::ASTactualsList> = {
+    exp => Box::new(ast::ASTactualsList::actualsList_exp(<>)),
+    actualsList "COMMA" exp => Box::new(ast::ASTactualsList::actualsList_actualsList(<>)),
+};
+
+
+//term
+pub term: Box<ast::ASTterm> = {
+    loc => Box::new(ast::ASTterm::term_loc(<>)),
+    "INTLITERAL" => Box::new(ast::ASTterm::term_intliteral(TokenType::INTLITERAL)),
+    "STRINGLITERAL" => Box::new(ast::ASTterm::term_stringliteral(TokenType::STRINGLITERAL)),
+    "TRUE" => Box::new(ast::ASTterm::term_true(TokenType::TRUE)),
+    "FALSE" => Box::new(ast::ASTterm::term_false(TokenType::FALSE)),
+    "MAGIC" => Box::new(ast::ASTterm::term_magic(TokenType::MAGIC)),
+    "LPAREN" exp "RPAREN" => Box::new(ast::ASTterm::term_paren(<>)),
+    callExp => Box::new(ast::ASTterm::term_callExp(<>)),
+
+};
+
+//loc
+pub loc: Box<ast::ASTloc> = {
+    id => Box::new(ast::ASTloc::loc_id(<>)),
+    loc "POSTDEC" id => Box::new(ast::ASTloc::loc_postdec(<>)),
+};
+
+//id
 pub id: Box<ast::ASTid> = {
-    "ID" => TokenType::ID,
+    "ID" => Box::new(ast::ASTid::id(TokenType::ID)),
 };
