@@ -1,5 +1,94 @@
 use crate::scanner::tokens::TokenType;
 
+//AST program
+#[derive(Clone, Debug, PartialEq)]
+pub enum ASTprogram {
+    program(Box<ASTglobals>),
+}
+
+
+//AST globals
+#[derive(Clone, Debug, PartialEq)]
+pub enum ASTglobals {
+    globals_decl(Box<ASTglobals>, Box<ASTdecl>),
+    globals_epsilon(),
+}
+
+
+//AST decl
+#[derive(Clone, Debug, PartialEq)]
+pub enum ASTdecl {
+    decl_varDecl(Box<ASTvarDecl>, TokenType),
+    decl_classDecl(Box<ASTclassDecl>),
+    decl_fnDecl(Box<ASTfnDecl>),
+}
+
+//AST varDecl
+#[derive(Clone, Debug, PartialEq)]
+pub enum ASTvarDecl {
+    varDecl_colon(Box<ASTid>, TokenType, Box<ASTtype>),
+    varDecl_colonassign(Box<ASTid>, TokenType, Box<ASTtype>, TokenType, Box<ASTexp>),
+}
+
+
+//AST type
+#[derive(Clone, Debug, PartialEq)]
+pub enum ASTtype {
+    type_primType(Box<ASTprimType>),
+    type_perfectprimType(TokenType, Box<ASTprimType>),
+    type_id(Box<ASTid>),
+    type_perfectid(TokenType, Box<ASTid>),
+}
+
+//AST primType
+#[derive(Clone, Debug, PartialEq)]
+pub enum ASTprimType {
+    primType_int(TokenType),
+    primType_bool(TokenType),
+    primType_void(TokenType),
+}
+
+//AST classDecl
+#[derive(Clone, Debug, PartialEq)]
+pub enum ASTclassDecl {
+    classDecl(Box<ASTid>, TokenType, TokenType, TokenType, Box<ASTclassBody>, TokenType, TokenType),
+}
+
+//AST classBody
+#[derive(Clone, Debug, PartialEq)]
+pub enum ASTclassBody {
+    classBody_varDecl(Box<ASTclassBody>, Box<ASTvarDecl>),
+    classBody_fnDecl(Box<ASTclassBody>, Box<ASTfnDecl>),
+    classBody_epsilon(),
+}
+
+//AST fnDecl
+#[derive(Clone, Debug, PartialEq)]
+pub enum ASTfnDecl {
+    fnDecl_formals(Box<ASTid>, TokenType, TokenType, Box<ASTformals>, TokenType, Box<ASTtype>, TokenType, Box<ASTstmtList>, TokenType),
+    //fnDecl(Box<ASTid>, TokenType, TokenType, TokenType, Box<ASTtype>, TokenType, Box<ASTstmtList>, TokenType),
+}
+
+//AST formals
+#[derive(Clone, Debug, PartialEq)]
+pub enum ASTformals {
+    formals_formalsList(Box<ASTformalsList>),
+    formals_epsilon(),
+}
+
+//AST formalsList
+#[derive(Clone, Debug, PartialEq)]
+pub enum ASTformalsList {
+    formalsList_formalDecl(Box<ASTformalDecl>),
+    formalsList(Box<ASTformalsList>, TokenType, Box<ASTformalDecl>),
+}
+
+//AST formalDecl 
+#[derive(Clone, Debug, PartialEq)]
+pub enum ASTformalDecl {
+    formalDecl(Box<ASTid>, TokenType, Box<ASTtype>),
+}
+
 //AST stmtList
 #[derive(Clone, Debug, PartialEq)]
 pub enum ASTstmtList {
@@ -19,7 +108,7 @@ pub enum ASTblockStmt {
 //AST stmt
 #[derive(Clone, Debug, PartialEq)]
 pub enum ASTstmt {
-    //stmt_varDecl(Box<ASTvarDecl>),
+    stmt_varDecl(Box<ASTvarDecl>),
     stmt_assign(Box<ASTloc>, TokenType, Box<ASTexp>),
     stmt_postdec(Box<ASTloc>, TokenType),
     stmt_postinc(Box<ASTloc>, TokenType),
