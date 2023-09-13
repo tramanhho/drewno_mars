@@ -53,11 +53,90 @@ extern {
   }
 }
 
+//program
+pub program: Box<ast::ASTprogram> = {
+    globals => Box::new(ast::ASTprogram::program(<>)),
+}
+
+//globals
+pub globals: Box<ast::ASTglobals> = {
+    globals decl => Box::new(ast::ASTglobals::globals_decl(<>)),
+    => Box::new(ast::ASTglobals::globals_epsilon(<>)),
+}
+
+//decl
+pub decl: Box<ast::ASTdecl> = {
+    varDecl "SEMICOL" => Box::new(ast::ASTdecl::decl_varDecl(<>)),
+    classDecl => Box::new(ast::ASTdecl::decl_classDecl(<>)),
+    fnDecl => Box::new(ast::ASTdecl::decl_fnDecl(<>)),
+}
+
+//varDecl
+pub varDecl: Box<ast::ASTvarDecl> = {
+    id "COLON" dm_type => Box::new(ast::ASTvarDecl::varDecl_colon(<>)),
+    id "COLON" dm_type "ASSIGN" exp => Box::new(ast::ASTvarDecl::varDecl_colonassign(<>)),
+}
+
+//type
+pub dm_type: Box<ast::ASTtype> = {
+    primType => Box::new(ast::ASTtype::type_primType(<>)),
+    "PERFECT" primType => Box::new(ast::ASTtype::type_perfectprimType(<>)),
+    id => Box::new(ast::ASTtype::type_id(<>)),
+    "PERFECT" id => Box::new(ast::ASTtype::type_perfectid(<>)),
+
+}
+
+//primType
+pub primType: Box<ast::ASTprimType> = {
+    "INT" => Box::new(ast::ASTprimType::primType_int(<>)),
+    "BOOL" => Box::new(ast::ASTprimType::primType_bool(<>)),
+    "VOID" => Box::new(ast::ASTprimType::primType_void(<>)),
+}
+
+//classDecl
+pub classDecl: Box<ast::ASTclassDecl> = {
+    id "COLON" "CLASS" "LCURLY" classBody "RCURLY" "SEMICOL" => Box::new(ast::ASTclassDecl::classDecl(<>)),
+}
+
+//classBody
+pub classBody: Box<ast::ASTclassBody> = {
+    classBody varDecl => Box::new(ast::ASTclassBody::classBody_varDecl(<>)),
+    classBody fnDecl => Box::new(ast::ASTclassBody::classBody_fnDecl(<>)),
+    => Box::new(ast::ASTclassBody::classBody_epsilon(<>)),
+
+}
+
+//fnDecl
+pub fnDecl: Box<ast::ASTfnDecl> = {
+    id "COLON" "LPAREN" formals "RPAREN" dm_type "LCURLY" stmtList "RCURLY"  => Box::new(ast::ASTfnDecl::fnDecl_formals(<>)),
+    //id "COLON" "LPAREN" "RPAREN" dm_type "LCURLY" stmtList "RCURLY"  => Box::new(ast::ASTfnDecl::fnDecl(<>)),
+
+}
+
+//formals
+pub formals: Box<ast::ASTformals> = {
+    formalsList  => Box::new(ast::ASTformals::formals_formalsList(<>)),
+    => Box::new(ast::ASTformals::formals_epsilon(<>)),
+}
+
+//formalsList
+pub formalsList: Box<ast::ASTformalsList> = {
+    formalDecl  => Box::new(ast::ASTformalsList::formalsList_formalDecl(<>)),
+    formalsList "COMMA" formalDecl  => Box::new(ast::ASTformalsList::formalsList(<>)),
+
+}
+
+//formalDecl
+pub formalDecl: Box<ast::ASTformalDecl> = {
+    id "COLON" dm_type  => Box::new(ast::ASTformalDecl::formalDecl(<>)),
+}
+
+
 //stmtList
 pub stmtList: Box<ast::ASTstmtList> = {
-stmtList stmt "SEMICOL"  => Box::new(ast::ASTstmtList::stmtList_stmtList(<>)),
-stmtList blockStmt  => Box::new(ast::ASTstmtList::stmtList_blockStmt(<>)),
- => Box::new(ast::ASTstmtList::stmtList_epsilon(<>)),
+    stmtList stmt "SEMICOL"  => Box::new(ast::ASTstmtList::stmtList_stmtList(<>)),
+    stmtList blockStmt  => Box::new(ast::ASTstmtList::stmtList_blockStmt(<>)),
+    => Box::new(ast::ASTstmtList::stmtList_epsilon(<>)),
 }
 
 //blockStmt
@@ -69,7 +148,7 @@ pub blockStmt: Box<ast::ASTblockStmt> = {
 
 //stmt
 pub stmt: Box<ast::ASTstmt> = {
-    //varDecl  => Box::new(ast::ASTstmt::stmt_varDecl(<>)),
+    varDecl  => Box::new(ast::ASTstmt::stmt_varDecl(<>)),
     loc "ASSIGN" exp  => Box::new(ast::ASTstmt::stmt_assign(<>)),
     loc "POSTDEC"  => Box::new(ast::ASTstmt::stmt_postdec(<>)),
     loc "POSTINC"  => Box::new(ast::ASTstmt::stmt_postinc(<>)),
