@@ -93,25 +93,11 @@ pub fn run(config: Config) {
             tokenizer(lines, config.output)
         },
         ProcessMode::Parse => {
-            // let mut lexer = TokenType::lexer(&input[..]).spanned().map(|(token, range)| {
-            //     Ok::<(usize, TokenType, usize), LexicalError>((range.start, token.unwrap(), range.end))
-            // });
-
-            // loop {
-            //     let token = match lexer.next() {
-            //         Some(x) => x,
-            //         None => break
-            //     };
-            //     dbg!(token.unwrap());
-            // }
             let lexer = Lexer::new(&input[..]);
-            // let ast = match locParser::new().parse(lexer) {
-            //     Ok(x) => x,
-            //     Err(_) => { panic!("syntax error, Parse failed"); },
-            //     Err(_) => { panic!("syntax error, Parse failed"); },
-            // };
-            let ast = locParser::new().parse(lexer).unwrap();
-            println!("{:?}", ast);
+            match ProgramParser::new().parse(lexer) {
+                Ok(_) => (),
+                Err(_) => { eprintln!("syntax error\nParse failed"); },
+            };
         },
     };
 }

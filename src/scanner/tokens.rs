@@ -46,7 +46,7 @@ impl Token {
                 TokenType::INTLITERAL | 
                 TokenType::STRINGLITERAL | 
                 TokenType::Illegal
-                => lex.slice().to_string(),
+                => ":".to_owned() + &lex.slice().to_string(),
                 _ => "".to_string()
             },
             token_type: token_type,

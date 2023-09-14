@@ -22,15 +22,15 @@ pub type Spanned<Tok, Loc, Error> = Result<(Loc, Tok, Loc), Error>;
 
 impl<'input> Iterator for Lexer<'input> {
     type Item = Spanned<TokenType, usize, LexicalError>;
-  
+
     fn next(&mut self) -> Option<Self::Item> {
-      self.token_stream.next().map(|(token, span)| {
-        let token = token.unwrap_or_else(|_| TokenType::Illegal);
-        match token {
-          // an invalid token was met
-          TokenType::Illegal => Err(LexicalError::InvalidToken),
-          _ => Ok((span.start, token, span.end))
-        }
-      })
+        self.token_stream.next().map(|(token, span)| {
+            let token = token.unwrap_or_else(|_| TokenType::Illegal);
+            match token {
+                // an invalid token was met
+                TokenType::Illegal => Err(LexicalError::InvalidToken),
+                _ => Ok((span.start, token, span.end))
+            }
+        })
     }
-  }
+}

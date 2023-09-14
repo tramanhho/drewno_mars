@@ -1,12 +1,5 @@
-"\a"
-"\b"
-"\f"
-        "\n"
-"\r"
-        "\t"
-"\v"
-"\'"
-        "\""
-"\?"
-        "\\"
-2147483648
+myClass:class{
+  a:int = 12
+  b:int
+  c:perfect bool
+};

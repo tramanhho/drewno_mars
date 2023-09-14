@@ -67,7 +67,7 @@ impl Scanner {
     }
 
     fn token_msg(&self, token: &Token) -> String {
-        format!("{:#?}:{} [{},{:#?}]\n", token.token_type, token.value, self.row, token.start)
+        format!("{:#?}{}\t[{},{:#?}]\n", token.token_type, token.value, self.row, token.start)
     }
 
     fn error_msg(&self, token: &Token) -> String {

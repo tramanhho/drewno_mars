@@ -8,7 +8,7 @@ extern {
   type Error = LexicalError;
 
   enum TokenType {
-    //"identifier" => TokenType::Identifier(<String>),
+    //"Identifier" => TokenType::Identifier(<String>),
     "AND" => TokenType::AND,
     "MAGIC" => TokenType::MAGIC,
     "BOOL" => TokenType::BOOL,
@@ -54,165 +54,165 @@ extern {
 }
 
 //program
-pub program: Box<ast::ASTprogram> = {
-    globals => Box::new(ast::ASTprogram::program(<>)),
+pub Program: Box<ast::Program> = {
+    Globals => Box::new(ast::Program::Program(<>)),
 }
 
 //globals
-pub globals: Box<ast::ASTglobals> = {
-    globals decl => Box::new(ast::ASTglobals::globals_decl(<>)),
-    => Box::new(ast::ASTglobals::globals_epsilon(<>)),
+pub Globals: Box<ast::Globals> = {
+    Globals Decl => Box::new(ast::Globals::Globals_Decl(<>)),
+    => Box::new(ast::Globals::Globals_Epsilon(<>)),
 }
 
 //decl
-pub decl: Box<ast::ASTdecl> = {
-    varDecl "SEMICOL" => Box::new(ast::ASTdecl::decl_varDecl(<>)),
-    classDecl => Box::new(ast::ASTdecl::decl_classDecl(<>)),
-    fnDecl => Box::new(ast::ASTdecl::decl_fnDecl(<>)),
+pub Decl: Box<ast::Decl> = {
+    VarDecl "SEMICOL" => Box::new(ast::Decl::Decl_VarDecl(<>)),
+    ClassDecl => Box::new(ast::Decl::Decl_ClassDecl(<>)),
+    FnDecl => Box::new(ast::Decl::Decl_FnDecl(<>)),
 }
 
-//varDecl
-pub varDecl: Box<ast::ASTvarDecl> = {
-    id "COLON" dm_type => Box::new(ast::ASTvarDecl::varDecl_colon(<>)),
-    id "COLON" dm_type "ASSIGN" exp => Box::new(ast::ASTvarDecl::varDecl_colonassign(<>)),
+//VarDecl
+pub VarDecl: Box<ast::VarDecl> = {
+    Id "COLON" Type => Box::new(ast::VarDecl::VarDecl_Colon(<>)),
+    Id "COLON" Type "ASSIGN" Exp => Box::new(ast::VarDecl::VarDecl_ColonAssign(<>)),
 }
 
 //type
-pub dm_type: Box<ast::ASTtype> = {
-    primType => Box::new(ast::ASTtype::type_primType(<>)),
-    "PERFECT" primType => Box::new(ast::ASTtype::type_perfectprimType(<>)),
-    id => Box::new(ast::ASTtype::type_id(<>)),
-    "PERFECT" id => Box::new(ast::ASTtype::type_perfectid(<>)),
+pub Type: Box<ast::Type> = {
+    PrimType => Box::new(ast::Type::Type_PrimType(<>)),
+    "PERFECT" PrimType => Box::new(ast::Type::Type_PerfectPrimType(<>)),
+    Id => Box::new(ast::Type::Type_Id(<>)),
+    "PERFECT" Id => Box::new(ast::Type::Type_PerfectId(<>)),
 
 }
 
-//primType
-pub primType: Box<ast::ASTprimType> = {
-    "INT" => Box::new(ast::ASTprimType::primType_int(<>)),
-    "BOOL" => Box::new(ast::ASTprimType::primType_bool(<>)),
-    "VOID" => Box::new(ast::ASTprimType::primType_void(<>)),
+//PrimType
+pub PrimType: Box<ast::PrimType> = {
+    "INT" => Box::new(ast::PrimType::PrimType_Int(<>)),
+    "BOOL" => Box::new(ast::PrimType::PrimType_Bool(<>)),
+    "VOID" => Box::new(ast::PrimType::PrimType_Void(<>)),
 }
 
-//classDecl
-pub classDecl: Box<ast::ASTclassDecl> = {
-    id "COLON" "CLASS" "LCURLY" classBody "RCURLY" "SEMICOL" => Box::new(ast::ASTclassDecl::classDecl(<>)),
+//ClassDecl
+pub ClassDecl: Box<ast::ClassDecl> = {
+    Id "COLON" "CLASS" "LCURLY" ClassBody "RCURLY" "SEMICOL" => Box::new(ast::ClassDecl::ClassDecl(<>)),
 }
 
 //classBody
-pub classBody: Box<ast::ASTclassBody> = {
-    classBody varDecl => Box::new(ast::ASTclassBody::classBody_varDecl(<>)),
-    classBody fnDecl => Box::new(ast::ASTclassBody::classBody_fnDecl(<>)),
-    => Box::new(ast::ASTclassBody::classBody_epsilon(<>)),
+pub ClassBody: Box<ast::ClassBody> = {
+    ClassBody VarDecl "SEMICOL" => Box::new(ast::ClassBody::ClassBody_VarDecl(<>)),
+    ClassBody FnDecl "SEMICOL" => Box::new(ast::ClassBody::ClassBody_FnDecl(<>)),
+    => Box::new(ast::ClassBody::ClassBody_Epsilon(<>)),
 
 }
 
-//fnDecl
-pub fnDecl: Box<ast::ASTfnDecl> = {
-    id "COLON" "LPAREN" formals "RPAREN" dm_type "LCURLY" stmtList "RCURLY"  => Box::new(ast::ASTfnDecl::fnDecl_formals(<>)),
-    //id "COLON" "LPAREN" "RPAREN" dm_type "LCURLY" stmtList "RCURLY"  => Box::new(ast::ASTfnDecl::fnDecl(<>)),
+//FnDecl
+pub FnDecl: Box<ast::FnDecl> = {
+    Id "COLON" "LPAREN" Formals "RPAREN" Type "LCURLY" StmtList "RCURLY" => Box::new(ast::FnDecl::FnDecl_Formals(<>)),
+    //Id "COLON" "LPAREN" "RPAREN" Type "LCURLY" StmtList "RCURLY" => Box::new(ast::FnDecl::FnDecl(<>)),
 
 }
 
 //formals
-pub formals: Box<ast::ASTformals> = {
-    formalsList  => Box::new(ast::ASTformals::formals_formalsList(<>)),
-    => Box::new(ast::ASTformals::formals_epsilon(<>)),
+pub Formals: Box<ast::Formals> = {
+    FormalsList => Box::new(ast::Formals::Formals_FormalsList(<>)),
+   => Box::new(ast::Formals::Formals_Epsilon(<>)),
 }
 
 //formalsList
-pub formalsList: Box<ast::ASTformalsList> = {
-    formalDecl  => Box::new(ast::ASTformalsList::formalsList_formalDecl(<>)),
-    formalsList "COMMA" formalDecl  => Box::new(ast::ASTformalsList::formalsList(<>)),
+pub FormalsList: Box<ast::FormalsList> = {
+    FormalDecl => Box::new(ast::FormalsList::FormalsList_FormalDecl(<>)),
+    FormalsList "COMMA" FormalDecl => Box::new(ast::FormalsList::FormalsList(<>)),
 
 }
 
 //formalDecl
-pub formalDecl: Box<ast::ASTformalDecl> = {
-    id "COLON" dm_type  => Box::new(ast::ASTformalDecl::formalDecl(<>)),
+pub FormalDecl: Box<ast::FormalDecl> = {
+    Id "COLON" Type => Box::new(ast::FormalDecl::FormalDecl(<>)),
 }
 
 
 //stmtList
-pub stmtList: Box<ast::ASTstmtList> = {
-    stmtList stmt "SEMICOL"  => Box::new(ast::ASTstmtList::stmtList_stmtList(<>)),
-    stmtList blockStmt  => Box::new(ast::ASTstmtList::stmtList_blockStmt(<>)),
-    => Box::new(ast::ASTstmtList::stmtList_epsilon(<>)),
+pub StmtList: Box<ast::StmtList> = {
+    StmtList Stmt "SEMICOL" => Box::new(ast::StmtList::StmtList_StmtList(<>)),
+    StmtList BlockStmt => Box::new(ast::StmtList::StmtList_BlockStmt(<>)),
+    => Box::new(ast::StmtList::StmtList_Epsilon(<>)),
 }
 
 //blockStmt
-pub blockStmt: Box<ast::ASTblockStmt> = {
-    "WHILE" "LPAREN" exp "RPAREN" "LCURLY" stmtList "RCURLY"  => Box::new(ast::ASTblockStmt::blockStmt_while(<>)),
-    "IF" "LPAREN" exp "RPAREN" "LCURLY" stmtList "RCURLY"  => Box::new(ast::ASTblockStmt::blockStmt_if(<>)),
-    "IF" "LPAREN" exp "RPAREN" "LCURLY" stmtList "RCURLY" "ELSE" "LCURLY" stmtList "RCURLY"  => Box::new(ast::ASTblockStmt::blockStmt_ifelse(<>)),
+pub BlockStmt: Box<ast::BlockStmt> = {
+    "WHILE" "LPAREN" Exp "RPAREN" "LCURLY" StmtList "RCURLY" => Box::new(ast::BlockStmt::BlockStmt_While(<>)),
+    "IF" "LPAREN" Exp "RPAREN" "LCURLY" StmtList "RCURLY" => Box::new(ast::BlockStmt::BlockStmt_If(<>)),
+    "IF" "LPAREN" Exp "RPAREN" "LCURLY" StmtList "RCURLY" "ELSE" "LCURLY" StmtList "RCURLY" => Box::new(ast::BlockStmt::BlockStmt_IfElse(<>)),
 }
 
 //stmt
-pub stmt: Box<ast::ASTstmt> = {
-    varDecl  => Box::new(ast::ASTstmt::stmt_varDecl(<>)),
-    loc "ASSIGN" exp  => Box::new(ast::ASTstmt::stmt_assign(<>)),
-    loc "POSTDEC"  => Box::new(ast::ASTstmt::stmt_postdec(<>)),
-    loc "POSTINC"  => Box::new(ast::ASTstmt::stmt_postinc(<>)),
-    "GIVE" exp  => Box::new(ast::ASTstmt::stmt_give(<>)),
-    "TAKE" loc  => Box::new(ast::ASTstmt::stmt_take(<>)),
-    "RETURN" exp  => Box::new(ast::ASTstmt::stmt_returnexp(<>)),
-    "RETURN"  => Box::new(ast::ASTstmt::stmt_return(<>)),
-    "EXIT"  => Box::new(ast::ASTstmt::stmt_exit(<>)),
-    callExp  => Box::new(ast::ASTstmt::stmt_callExp(<>)),
+pub Stmt: Box<ast::Stmt> = {
+    VarDecl => Box::new(ast::Stmt::Stmt_VarDecl(<>)),
+    Loc "ASSIGN" Exp => Box::new(ast::Stmt::Stmt_Assign(<>)),
+    Loc "POSTDEC" => Box::new(ast::Stmt::Stmt_PostDec(<>)),
+    Loc "POSTINC" => Box::new(ast::Stmt::Stmt_PostInc(<>)),
+    "GIVE" Exp => Box::new(ast::Stmt::Stmt_Give(<>)),
+    "TAKE" Loc => Box::new(ast::Stmt::Stmt_Take(<>)),
+    "RETURN" Exp => Box::new(ast::Stmt::Stmt_ReturnExp(<>)),
+    "RETURN" => Box::new(ast::Stmt::Stmt_Return(<>)),
+    "EXIT" => Box::new(ast::Stmt::Stmt_Exit(<>)),
+    CallExp => Box::new(ast::Stmt::Stmt_CallExp(<>)),
 }
 
-//exp
-pub exp: Box<ast::ASTexp> = {
-    term "DASH" exp  => Box::new(ast::ASTexp::exp_dash(<>)),
-    term "CROSS" exp  => Box::new(ast::ASTexp::exp_cross(<>)),
-    term "STAR" exp  => Box::new(ast::ASTexp::exp_star(<>)),
-    term "SLASH" exp  => Box::new(ast::ASTexp::exp_slash(<>)),
-    term "AND" exp  => Box::new(ast::ASTexp::exp_and(<>)),
-    term "OR" exp  => Box::new(ast::ASTexp::exp_or(<>)),
-    term "EQUALS" exp  => Box::new(ast::ASTexp::exp_equals(<>)),
-    term "NOTEQUALS" exp  => Box::new(ast::ASTexp::exp_notequals(<>)),
-    term "GREATER" exp  => Box::new(ast::ASTexp::exp_greater(<>)),
-    term "GREATEREQ" exp  => Box::new(ast::ASTexp::exp_greatereq(<>)),
-    term "LESS" exp  => Box::new(ast::ASTexp::exp_less(<>)),
-    term "LESSEQ" exp  => Box::new(ast::ASTexp::exp_lesseq(<>)),
-    "NOT" exp  => Box::new(ast::ASTexp::exp_not(<>)), //may need to fix to exp
-    "DASH" term  => Box::new(ast::ASTexp::exp_dashterm(<>)),
-    term  => Box::new(ast::ASTexp::exp_term(<>)),
+//Exp
+pub Exp: Box<ast::Exp> = {
+    Term "DASH" Exp => Box::new(ast::Exp::Exp_Dash(<>)),
+    Term "CROSS" Exp => Box::new(ast::Exp::Exp_Cross(<>)),
+    Term "STAR" Exp => Box::new(ast::Exp::Exp_Star(<>)),
+    Term "SLASH" Exp => Box::new(ast::Exp::Exp_Slash(<>)),
+    Term "AND" Exp => Box::new(ast::Exp::Exp_And(<>)),
+    Term "OR" Exp => Box::new(ast::Exp::Exp_Or(<>)),
+    Term "EQUALS" Exp => Box::new(ast::Exp::Exp_Equals(<>)),
+    Term "NOTEQUALS" Exp => Box::new(ast::Exp::Exp_NotEquals(<>)),
+    Term "GREATER" Exp => Box::new(ast::Exp::Exp_Greater(<>)),
+    Term "GREATEREQ" Exp => Box::new(ast::Exp::Exp_GreaterEq(<>)),
+    Term "LESS" Exp => Box::new(ast::Exp::Exp_Less(<>)),
+    Term "LESSEQ" Exp => Box::new(ast::Exp::Exp_LessEq(<>)),
+    "NOT" Exp => Box::new(ast::Exp::Exp_Not(<>)), //may need to fix to Exp
+    "DASH" Term => Box::new(ast::Exp::Exp_DashTerm(<>)),
+    Term => Box::new(ast::Exp::Exp_Term(<>)),
 
 };
 
 //callExp
-pub callExp: Box<ast::ASTcallExp> = {
-    id "LPAREN" "RPAREN" => Box::new(ast::ASTcallExp::callExp_fn(<>)),
-    id "LPAREN" actualsList "RPAREN" => Box::new(ast::ASTcallExp::callExp_fnargs(<>)),
+pub CallExp: Box<ast::CallExp> = {
+    Id "LPAREN" "RPAREN" => Box::new(ast::CallExp::CallExp_Fn(<>)),
+    Id "LPAREN" ActualsList "RPAREN" => Box::new(ast::CallExp::CallExp_FnArgs(<>)),
 };
 
 //actualsList
-pub actualsList: Box<ast::ASTactualsList> = {
-    exp => Box::new(ast::ASTactualsList::actualsList_exp(<>)),
-    actualsList "COMMA" exp => Box::new(ast::ASTactualsList::actualsList_actualsList(<>)),
+pub ActualsList: Box<ast::ActualsList> = {
+    Exp => Box::new(ast::ActualsList::ActualsList_Exp(<>)),
+    ActualsList "COMMA" Exp => Box::new(ast::ActualsList::ActualsList_ActualsList(<>)),
 };
 
 
 //term
-pub term: Box<ast::ASTterm> = {
-    loc => Box::new(ast::ASTterm::term_loc(<>)),
-    "INTLITERAL" => Box::new(ast::ASTterm::term_intliteral(TokenType::INTLITERAL)),
-    "STRINGLITERAL" => Box::new(ast::ASTterm::term_stringliteral(TokenType::STRINGLITERAL)),
-    "TRUE" => Box::new(ast::ASTterm::term_true(TokenType::TRUE)),
-    "FALSE" => Box::new(ast::ASTterm::term_false(TokenType::FALSE)),
-    "MAGIC" => Box::new(ast::ASTterm::term_magic(TokenType::MAGIC)),
-    "LPAREN" exp "RPAREN" => Box::new(ast::ASTterm::term_paren(<>)),
-    callExp => Box::new(ast::ASTterm::term_callExp(<>)),
+pub Term: Box<ast::Term> = {
+    Loc=> Box::new(ast::Term::Term_Loc(<>)),
+    "INTLITERAL" => Box::new(ast::Term::Term_IntLiteral(TokenType::INTLITERAL)),
+    "STRINGLITERAL" => Box::new(ast::Term::Term_StringLiteral(TokenType::STRINGLITERAL)),
+    "TRUE" => Box::new(ast::Term::Term_True(TokenType::TRUE)),
+    "FALSE" => Box::new(ast::Term::Term_False(TokenType::FALSE)),
+    "MAGIC" => Box::new(ast::Term::Term_Magic(TokenType::MAGIC)),
+    "LPAREN" Exp "RPAREN" => Box::new(ast::Term::Term_Paren(<>)),
+    CallExp => Box::new(ast::Term::Term_CallExp(<>)),
 
 };
 
 //loc
-pub loc: Box<ast::ASTloc> = {
-    id => Box::new(ast::ASTloc::loc_id(<>)),
-    loc "POSTDEC" id => Box::new(ast::ASTloc::loc_postdec(<>)),
+pub Loc: Box<ast::Loc> = {
+    Id => Box::new(ast::Loc::Loc_Id(<>)),
+    Loc"POSTDEC" Id => Box::new(ast::Loc::Loc_PostDec(<>)),
 };
 
 //id
-pub id: Box<ast::ASTid> = {
-    "ID" => Box::new(ast::ASTid::id(TokenType::ID)),
+pub Id: Box<ast::Id> = {
+    "ID" => Box::new(ast::Id::Id(TokenType::ID)),
 };

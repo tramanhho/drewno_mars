@@ -2,181 +2,181 @@ use crate::scanner::tokens::TokenType;
 
 //AST program
 #[derive(Clone, Debug, PartialEq)]
-pub enum ASTprogram {
-    program(Box<ASTglobals>),
+pub enum Program {
+    Program(Box<Globals>),
 }
 
 
 //AST globals
 #[derive(Clone, Debug, PartialEq)]
-pub enum ASTglobals {
-    globals_decl(Box<ASTglobals>, Box<ASTdecl>),
-    globals_epsilon(),
+pub enum Globals {
+    Globals_Decl(Box<Globals>, Box<Decl>),
+    Globals_Epsilon(),
 }
 
 
 //AST decl
 #[derive(Clone, Debug, PartialEq)]
-pub enum ASTdecl {
-    decl_varDecl(Box<ASTvarDecl>, TokenType),
-    decl_classDecl(Box<ASTclassDecl>),
-    decl_fnDecl(Box<ASTfnDecl>),
+pub enum Decl {
+    Decl_VarDecl(Box<VarDecl>, TokenType),
+    Decl_ClassDecl(Box<ClassDecl>),
+    Decl_FnDecl(Box<FnDecl>),
 }
 
 //AST varDecl
 #[derive(Clone, Debug, PartialEq)]
-pub enum ASTvarDecl {
-    varDecl_colon(Box<ASTid>, TokenType, Box<ASTtype>),
-    varDecl_colonassign(Box<ASTid>, TokenType, Box<ASTtype>, TokenType, Box<ASTexp>),
+pub enum VarDecl {
+    VarDecl_Colon(Box<Id>, TokenType, Box<Type>),
+    VarDecl_ColonAssign(Box<Id>, TokenType, Box<Type>, TokenType, Box<Exp>),
 }
 
 
 //AST type
 #[derive(Clone, Debug, PartialEq)]
-pub enum ASTtype {
-    type_primType(Box<ASTprimType>),
-    type_perfectprimType(TokenType, Box<ASTprimType>),
-    type_id(Box<ASTid>),
-    type_perfectid(TokenType, Box<ASTid>),
+pub enum Type {
+    Type_PrimType(Box<PrimType>),
+    Type_PerfectPrimType(TokenType, Box<PrimType>),
+    Type_Id(Box<Id>),
+    Type_PerfectId(TokenType, Box<Id>),
 }
 
 //AST primType
 #[derive(Clone, Debug, PartialEq)]
-pub enum ASTprimType {
-    primType_int(TokenType),
-    primType_bool(TokenType),
-    primType_void(TokenType),
+pub enum PrimType {
+    PrimType_Int(TokenType),
+    PrimType_Bool(TokenType),
+    PrimType_Void(TokenType),
 }
 
 //AST classDecl
 #[derive(Clone, Debug, PartialEq)]
-pub enum ASTclassDecl {
-    classDecl(Box<ASTid>, TokenType, TokenType, TokenType, Box<ASTclassBody>, TokenType, TokenType),
+pub enum ClassDecl {
+    ClassDecl(Box<Id>, TokenType, TokenType, TokenType, Box<ClassBody>, TokenType, TokenType),
 }
 
 //AST classBody
 #[derive(Clone, Debug, PartialEq)]
-pub enum ASTclassBody {
-    classBody_varDecl(Box<ASTclassBody>, Box<ASTvarDecl>),
-    classBody_fnDecl(Box<ASTclassBody>, Box<ASTfnDecl>),
-    classBody_epsilon(),
+pub enum ClassBody {
+    ClassBody_VarDecl(Box<ClassBody>, Box<VarDecl>, TokenType),
+    ClassBody_FnDecl(Box<ClassBody>, Box<FnDecl>, TokenType),
+    ClassBody_Epsilon(),
 }
 
 //AST fnDecl
 #[derive(Clone, Debug, PartialEq)]
-pub enum ASTfnDecl {
-    fnDecl_formals(Box<ASTid>, TokenType, TokenType, Box<ASTformals>, TokenType, Box<ASTtype>, TokenType, Box<ASTstmtList>, TokenType),
-    //fnDecl(Box<ASTid>, TokenType, TokenType, TokenType, Box<ASTtype>, TokenType, Box<ASTstmtList>, TokenType),
+pub enum FnDecl {
+    FnDecl_Formals(Box<Id>, TokenType, TokenType, Box<Formals>, TokenType, Box<Type>, TokenType, Box<StmtList>, TokenType),
+    //fnDecl(Box<Id>, TokenType, TokenType, TokenType, Box<Type>, TokenType, Box<StmtList>, TokenType),
 }
 
 //AST formals
 #[derive(Clone, Debug, PartialEq)]
-pub enum ASTformals {
-    formals_formalsList(Box<ASTformalsList>),
-    formals_epsilon(),
+pub enum Formals {
+    Formals_FormalsList(Box<FormalsList>),
+    Formals_Epsilon(),
 }
 
 //AST formalsList
 #[derive(Clone, Debug, PartialEq)]
-pub enum ASTformalsList {
-    formalsList_formalDecl(Box<ASTformalDecl>),
-    formalsList(Box<ASTformalsList>, TokenType, Box<ASTformalDecl>),
+pub enum FormalsList {
+    FormalsList_FormalDecl(Box<FormalDecl>),
+    FormalsList(Box<FormalsList>, TokenType, Box<FormalDecl>),
 }
 
 //AST formalDecl 
 #[derive(Clone, Debug, PartialEq)]
-pub enum ASTformalDecl {
-    formalDecl(Box<ASTid>, TokenType, Box<ASTtype>),
+pub enum FormalDecl {
+    FormalDecl(Box<Id>, TokenType, Box<Type>),
 }
 
 //AST stmtList
 #[derive(Clone, Debug, PartialEq)]
-pub enum ASTstmtList {
-    stmtList_stmtList(Box<ASTstmtList>, Box<ASTstmt>, TokenType),
-    stmtList_blockStmt(Box<ASTstmtList>, Box<ASTblockStmt>),
-    stmtList_epsilon(),
+pub enum StmtList {
+    StmtList_StmtList(Box<StmtList>, Box<Stmt>, TokenType),
+    StmtList_BlockStmt(Box<StmtList>, Box<BlockStmt>),
+    StmtList_Epsilon(),
 }
 
 
 //AST blockStmt
 #[derive(Clone, Debug, PartialEq)]
-pub enum ASTblockStmt {
-    blockStmt_while(TokenType, TokenType, Box<ASTexp>, TokenType, TokenType, Box<ASTstmtList>, TokenType),
-    blockStmt_if(TokenType, TokenType, Box<ASTexp>, TokenType, TokenType, Box<ASTstmtList>, TokenType),
-    blockStmt_ifelse(TokenType, TokenType, Box<ASTexp>, TokenType, TokenType, Box<ASTstmtList>, TokenType, TokenType, TokenType, Box<ASTstmtList>, TokenType),
+pub enum BlockStmt {
+    BlockStmt_While(TokenType, TokenType, Box<Exp>, TokenType, TokenType, Box<StmtList>, TokenType),
+    BlockStmt_If(TokenType, TokenType, Box<Exp>, TokenType, TokenType, Box<StmtList>, TokenType),
+    BlockStmt_IfElse(TokenType, TokenType, Box<Exp>, TokenType, TokenType, Box<StmtList>, TokenType, TokenType, TokenType, Box<StmtList>, TokenType),
 }
 //AST stmt
 #[derive(Clone, Debug, PartialEq)]
-pub enum ASTstmt {
-    stmt_varDecl(Box<ASTvarDecl>),
-    stmt_assign(Box<ASTloc>, TokenType, Box<ASTexp>),
-    stmt_postdec(Box<ASTloc>, TokenType),
-    stmt_postinc(Box<ASTloc>, TokenType),
-    stmt_give(TokenType, Box<ASTexp>),
-    stmt_take(TokenType, Box<ASTloc>),
-    stmt_returnexp(TokenType, Box<ASTexp>),
-    stmt_return(TokenType),
-    stmt_exit(TokenType),
-    stmt_callExp(Box<ASTcallExp>),
+pub enum Stmt {
+    Stmt_VarDecl(Box<VarDecl>),
+    Stmt_Assign(Box<Loc>, TokenType, Box<Exp>),
+    Stmt_PostDec(Box<Loc>, TokenType),
+    Stmt_PostInc(Box<Loc>, TokenType),
+    Stmt_Give(TokenType, Box<Exp>),
+    Stmt_Take(TokenType, Box<Loc>),
+    Stmt_ReturnExp(TokenType, Box<Exp>),
+    Stmt_Return(TokenType),
+    Stmt_Exit(TokenType),
+    Stmt_CallExp(Box<CallExp>),
 }
 
 //AST exp
 #[derive(Clone, Debug, PartialEq)]
-pub enum ASTexp {
-    exp_dash(Box<ASTterm>, TokenType, Box<ASTexp>),
-    exp_cross(Box<ASTterm>, TokenType, Box<ASTexp>),
-    exp_star(Box<ASTterm>, TokenType, Box<ASTexp>),
-    exp_slash(Box<ASTterm>, TokenType, Box<ASTexp>),
-    exp_and(Box<ASTterm>, TokenType, Box<ASTexp>),
-    exp_or(Box<ASTterm>, TokenType, Box<ASTexp>),
-    exp_equals(Box<ASTterm>, TokenType, Box<ASTexp>),
-    exp_notequals(Box<ASTterm>, TokenType, Box<ASTexp>),
-    exp_greater(Box<ASTterm>, TokenType, Box<ASTexp>),
-    exp_greatereq(Box<ASTterm>, TokenType, Box<ASTexp>),
-    exp_less(Box<ASTterm>, TokenType, Box<ASTexp>),
-    exp_lesseq(Box<ASTterm>, TokenType, Box<ASTexp>),
-    exp_not(TokenType, Box<ASTexp>),
-    exp_dashterm(TokenType, Box<ASTterm>),
-    exp_term(Box<ASTterm>),
+pub enum Exp {
+    Exp_Dash(Box<Term>, TokenType, Box<Exp>),
+    Exp_Cross(Box<Term>, TokenType, Box<Exp>),
+    Exp_Star(Box<Term>, TokenType, Box<Exp>),
+    Exp_Slash(Box<Term>, TokenType, Box<Exp>),
+    Exp_And(Box<Term>, TokenType, Box<Exp>),
+    Exp_Or(Box<Term>, TokenType, Box<Exp>),
+    Exp_Equals(Box<Term>, TokenType, Box<Exp>),
+    Exp_NotEquals(Box<Term>, TokenType, Box<Exp>),
+    Exp_Greater(Box<Term>, TokenType, Box<Exp>),
+    Exp_GreaterEq(Box<Term>, TokenType, Box<Exp>),
+    Exp_Less(Box<Term>, TokenType, Box<Exp>),
+    Exp_LessEq(Box<Term>, TokenType, Box<Exp>),
+    Exp_Not(TokenType, Box<Exp>),
+    Exp_DashTerm(TokenType, Box<Term>),
+    Exp_Term(Box<Term>),
 }
 
 //AST callExp
 #[derive(Clone, Debug, PartialEq)]
-pub enum ASTcallExp {
-    callExp_fn(Box<ASTid>, TokenType, TokenType),
-    callExp_fnargs(Box<ASTid>, TokenType, Box<ASTactualsList>, TokenType),
+pub enum CallExp {
+    CallExp_Fn(Box<Id>, TokenType, TokenType),
+    CallExp_FnArgs(Box<Id>, TokenType, Box<ActualsList>, TokenType),
 }
 
 //AST actualsList
 #[derive(Clone, Debug, PartialEq)]
-pub enum ASTactualsList {
-    actualsList_exp(Box<ASTexp>),
-    actualsList_actualsList(Box<ASTactualsList>, TokenType, Box<ASTexp>),
+pub enum ActualsList {
+    ActualsList_Exp(Box<Exp>),
+    ActualsList_ActualsList(Box<ActualsList>, TokenType, Box<Exp>),
 }
 
 //AST term
 #[derive(Clone, Debug, PartialEq)]
-pub enum ASTterm {
-    term_loc(Box<ASTloc>),
-    term_intliteral(TokenType),
-    term_stringliteral(TokenType),
-    term_true(TokenType),
-    term_false(TokenType),
-    term_magic(TokenType),
-    term_paren(TokenType, Box<ASTexp>, TokenType),
-    term_callExp(Box<ASTcallExp>),
+pub enum Term {
+    Term_Loc(Box<Loc>),
+    Term_IntLiteral(TokenType),
+    Term_StringLiteral(TokenType),
+    Term_True(TokenType),
+    Term_False(TokenType),
+    Term_Magic(TokenType),
+    Term_Paren(TokenType, Box<Exp>, TokenType),
+    Term_CallExp(Box<CallExp>),
 }
 
 //AST loc
 #[derive(Clone, Debug, PartialEq)]
-pub enum ASTloc {
-    loc_id(Box<ASTid>),
-    loc_postdec(Box<ASTloc>, TokenType, Box<ASTid>),
+pub enum Loc {
+    Loc_Id(Box<Id>),
+    Loc_PostDec(Box<Loc>, TokenType, Box<Id>),
 }
 
 
 //AST id
 #[derive(Clone, Debug, PartialEq)]
-pub enum ASTid {
-    id(TokenType),
+pub enum Id {
+    Id(TokenType),
 }
