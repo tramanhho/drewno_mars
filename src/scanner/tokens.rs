@@ -1,26 +1,27 @@
 use logos::Logos;
 use std::fmt;
-//use std::num::ParseIntError;
 
-// #[derive(Debug, Default, Logos, Clone, PartialEq)]
-// pub enum LexingError {
-//     InvalidInteger(String),
-//
-//     #[default]
-//     #[regex(r#"[^\s]"#, priority = 1)]
-//     Illegal,
-// }
+use std::num::ParseIntError;
 
-// /// Error type returned by calling `lex.slice().parse()` to i32.
-// impl From<ParseIntError> for LexingError {
-//     fn from(err: ParseIntError) -> Self {
-//         use std::num::IntErrorKind::*;
-//         match err.kind() {
-//             PosOverflow | NegOverflow => LexingError::InvalidInteger("overflow error".to_owned()),
-//             _ => LexingError::InvalidInteger("other error".to_owned()),
-//         }
-//     }
-// }
+#[derive(Debug, Default, Logos, Clone, PartialEq)]
+pub enum LexingError {
+    InvalidInteger(String),
+
+    #[default]
+    #[regex(r#"[^\s]"#, priority = 1)]
+    Illegal,
+}
+
+/// Error type returned by calling `lex.slice().parse()` to i32.
+impl From<ParseIntError> for LexingError {
+    fn from(err: ParseIntError) -> Self {
+        use std::num::IntErrorKind::*;
+        match err.kind() {
+            PosOverflow | NegOverflow => LexingError::InvalidInteger("overflow error".to_owned()),
+            _ => LexingError::InvalidInteger("other error".to_owned()),
+        }
+    }
+}
 
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -41,20 +42,21 @@ impl Token {
         Token {
             start: lex.span().start + 1,
             end: lex.span().end + 1,
-            value: match &token_type {
-                TokenType::ID | 
-                TokenType::INTLITERAL | 
-                TokenType::STRINGLITERAL | 
-                TokenType::Illegal
-                => ":".to_owned() + &lex.slice().to_string(),
-                _ => "".to_string()
-            },
+            // value: match &token_type {
+            //     TokenType::ID(v) |
+            //     TokenType::STRINGLITERAL(v) | 
+            //     TokenType::Illegal(v)
+            //     => ":".to_owned() + v,
+            //     TokenType::INTLITERAL(v) => ":".to_owned() + v.to_string().as_str(),
+            //     _ => "".to_string()
+            // },
+            value: "".to_string(),
             token_type: token_type,
         }
     }
 }
 
-#[derive(Logos, Debug, PartialEq, Copy, Clone)]
+#[derive(Logos, Debug, PartialEq, Clone)]
 //#[logos(error = LexingError)]
 #[logos(skip r"[ \t\n\f]+")]
 #[logos(skip r#"//.*[\n]?"#)]
@@ -112,17 +114,18 @@ pub enum TokenType {
     WHILE,
 
     //Identifiers and Literals
-    #[regex(r"[a-zA-Z_][0-9a-zA-Z_]*", priority = 2)]
-    ID,
+    #[regex(r"[a-zA-Z_][0-9a-zA-Z_]*", priority = 2, callback = |lex| lex.slice().parse().ok())]
+    ID(String),
 
-    // #[regex(r"[0-9]+", priority = 2, callback = |lex| lex.slice().parse())]
-    // INTLITERAL(i32),
+    #[regex(r"[0-9]+", priority = 2, callback = |lex| lex.slice().parse().ok())]
+    INTLITERAL(i32),
+    // #[regex(r"[0-9]+", priority = 2)]
+    // INTLITERAL,
 
-    #[regex(r"[0-9]+", priority = 2)]
-    INTLITERAL,
-
-    #[regex(r#""(\\[nt"\\]|[^\n"\\])*""#, priority = 2)]
-    STRINGLITERAL,
+    #[regex(r#""(\\[nt"\\]|[^\n"\\])*""#, priority = 2, callback = |lex| lex.slice().parse().ok())]
+    STRINGLITERAL(String),
+    // #[regex(r#""(\\[nt"\\]|[^\n"\\])*""#, priority = 2)]
+    // STRINGLITERAL,
 
     //Symbol Operators
     #[regex("=", priority = 3)]
@@ -189,8 +192,8 @@ pub enum TokenType {
     STAR,
 
     //illegal
-    #[regex(r#"[^\s]"#, priority = 1)]
-    Illegal,
+    #[regex(r#"[^\s]"#, priority = 1, callback = |lex| lex.slice().parse().ok())]
+    Illegal(String),
 
     //string literal with bad escape sequence ignored
     #[regex(r#""((\\[nt"\\]|[^\n"\\])*(\\[^nt"\\])(\\[nt"\\]|[^\n"\\])*)+""#, priority = 3)]

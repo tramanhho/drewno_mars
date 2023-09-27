@@ -190,6 +190,7 @@ mod tests {
                 TermParser::new().parse(Lexer::new(term)).is_ok(),
                 "\nThe following input did not pass the parser as intended:\n{}\n", term, 
             );
+            println!("{:?}", TermParser::new().parse(Lexer::new(term)).unwrap());
         }
     }
 
@@ -234,6 +235,7 @@ mod tests {
 
         for id in ids_good.iter() {
             assert!(IdParser::new().parse(Lexer::new(id)).is_ok());
+            println!("{:?}", IdParser::new().parse(Lexer::new(id)).unwrap());
         }
 
         for id in ids_bad.iter() {

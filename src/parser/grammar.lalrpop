@@ -8,7 +8,6 @@ extern {
   type Error = LexicalError;
 
   enum TokenType {
-    //"Identifier" => TokenType::Identifier(<String>),
     "AND" => TokenType::AND,
     "MAGIC" => TokenType::MAGIC,
     "BOOL" => TokenType::BOOL,
@@ -26,9 +25,9 @@ extern {
     "EXIT" => TokenType::EXIT,
     "VOID" => TokenType::VOID,
     "WHILE" => TokenType::WHILE,
-    "ID" => TokenType::ID,
-    "INTLITERAL" => TokenType::INTLITERAL,
-    "STRINGLITERAL" => TokenType::STRINGLITERAL,
+    "ID" => TokenType::ID(<String>),
+    "INTLITERAL" => TokenType::INTLITERAL(<i32>),
+    "STRINGLITERAL" => TokenType::STRINGLITERAL(<String>),
     "ASSIGN" => TokenType::ASSIGN,
     "COLON" => TokenType::COLON,
     "COMMA" => TokenType::COMMA,
@@ -196,8 +195,8 @@ pub ActualsList: Box<ast::ActualsList> = {
 //term
 pub Term: Box<ast::Term> = {
     Loc=> Box::new(ast::Term::Term_Loc(<>)),
-    "INTLITERAL" => Box::new(ast::Term::Term_IntLiteral(TokenType::INTLITERAL)),
-    "STRINGLITERAL" => Box::new(ast::Term::Term_StringLiteral(TokenType::STRINGLITERAL)),
+    <val:"INTLITERAL"> => Box::new(ast::Term::Term_IntLiteral(val)),
+    <string:"STRINGLITERAL"> => Box::new(ast::Term::Term_StringLiteral(string)),
     "TRUE" => Box::new(ast::Term::Term_True(TokenType::TRUE)),
     "FALSE" => Box::new(ast::Term::Term_False(TokenType::FALSE)),
     "MAGIC" => Box::new(ast::Term::Term_Magic(TokenType::MAGIC)),
@@ -209,10 +208,10 @@ pub Term: Box<ast::Term> = {
 //loc
 pub Loc: Box<ast::Loc> = {
     Id => Box::new(ast::Loc::Loc_Id(<>)),
-    Loc"POSTDEC" Id => Box::new(ast::Loc::Loc_PostDec(<>)),
+    Loc "POSTDEC" Id => Box::new(ast::Loc::Loc_PostDec(<>)),
 };
 
 //id
 pub Id: Box<ast::Id> = {
-    "ID" => Box::new(ast::Id::Id(TokenType::ID)),
+    <name:"ID"> => Box::new(ast::Id::Id(name)),
 };

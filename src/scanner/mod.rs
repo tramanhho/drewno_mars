@@ -76,12 +76,13 @@ impl Scanner {
 }
 
 fn error_handler(token_type : &TokenType ) -> &str {
-    match token_type {
-        TokenType::INTLITERALOverflow => "Integer literal overflow",
-        TokenType::Illegal => "Illegal character ",
-        TokenType::STRINGLITERALBadEscape => "String literal with bad escape sequence detected",
-        TokenType::STRINGLITERALUnterminated => "Unterminated string literal detected",
-        TokenType::STRINGLITERALUnterminatedBadEscape => "Unterminated string literal with bad escape sequence detected",
-        _ => ""
-    }
+    ""
+    // match token_type {
+    //     TokenType::INTLITERALOverflow => "Integer literal overflow",
+    //     TokenType::Illegal(v) => ("Illegal character: ".to_owned() + v).as_str(),
+    //     TokenType::STRINGLITERALBadEscape => "String literal with bad escape sequence detected",
+    //     TokenType::STRINGLITERALUnterminated => "Unterminated string literal detected",
+    //     TokenType::STRINGLITERALUnterminatedBadEscape => "Unterminated string literal with bad escape sequence detected",
+    //     _ => ""
+    // }
 }

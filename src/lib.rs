@@ -17,7 +17,8 @@ pub struct Config {
 
 pub enum ProcessMode {
     Tokenize,
-    Parse
+    ParseCheck,
+    ParsePrint
 }
 
 
@@ -38,17 +39,30 @@ impl Config {
             };
 
             if arg.starts_with("-") {
-                mode = match arg.as_str() {
-                    "-t" => {
-                        output_file = match args.next() {
+                let arg_str = arg.as_str();
+                mode = match arg_str {
+                    "-t" => Some(ProcessMode::Tokenize),
+                    "-p" => Some(ProcessMode::ParseCheck),
+                    "-u" => Some(ProcessMode::ParsePrint),
+                    _ => return Err(
+                        "The only supported options right now are:\n  
+                        [-t <inputFile.dm> <outputFile> ]: Tokenizes inputFile and outputs result into <outputFile>.\n  
+                        [-p <inputFile.dm> ]: Checks if inputFile has syntactically correct Drewno Mars code.\n
+                        [-u <inputFile.dm> <outputFile> ]: Converts inputFile into canonical Drewno Mars code and outputs result into <outputFile>.\n
+                        Try again with a supported option.\n
+                        Note: all <outputFile> arguments are optional. If no <outputFile> is given, output will be printed to console.")
+                };
+
+                output_file = match arg_str {
+                    "-t" | "-u" => {
+                        match args.next() {
                             Some(x) => Some(x),
                             None => None
-                        };
-                        Some(ProcessMode::Tokenize)
+                        }
                     },
-                    "-p" => Some(ProcessMode::Parse),
-                    _ => return Err("The only supported options right now are: \n  -t Tokenize \n  -p Parse\nTry again with a supported option.")
-                }
+                    _ => None
+                };
+
             } else {
                 input = match input {
                     None => Some(arg),
@@ -92,12 +106,18 @@ pub fn run(config: Config) {
             let lines: Vec<&str> = input.split("\r\n").collect();
             tokenizer(lines, config.output)
         },
-        ProcessMode::Parse => {
+        ProcessMode::ParseCheck => {
             let lexer = Lexer::new(&input[..]);
             match ProgramParser::new().parse(lexer) {
                 Ok(_) => (),
                 Err(_) => { eprintln!("syntax error\nParse failed"); },
             };
+        },
+        ProcessMode::ParsePrint => {
+            let lexer = Lexer::new("a : bool = ! true;");
+            //let lexer = Lexer::new(&input[..]);
+            let ast = ProgramParser::new().parse(lexer).unwrap();
+            println!("{:?}", ast);
         },
     };
 }

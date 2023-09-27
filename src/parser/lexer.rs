@@ -25,10 +25,10 @@ impl<'input> Iterator for Lexer<'input> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.token_stream.next().map(|(token, span)| {
-            let token = token.unwrap_or_else(|_| TokenType::Illegal);
+            let token = token.unwrap_or_else(|_| TokenType::Illegal("".to_string()) );
             match token {
-                // an invalid token was met
-                TokenType::Illegal => Err(LexicalError::InvalidToken),
+                // found an invalid token
+                TokenType::Illegal(_) => Err(LexicalError::InvalidToken),
                 _ => Ok((span.start, token, span.end))
             }
         })

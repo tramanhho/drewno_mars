@@ -158,8 +158,8 @@ pub enum ActualsList {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Term {
     Term_Loc(Box<Loc>),
-    Term_IntLiteral(TokenType),
-    Term_StringLiteral(TokenType),
+    Term_IntLiteral(i32),
+    Term_StringLiteral(String),
     Term_True(TokenType),
     Term_False(TokenType),
     Term_Magic(TokenType),
@@ -178,5 +178,5 @@ pub enum Loc {
 //AST id
 #[derive(Clone, Debug, PartialEq)]
 pub enum Id {
-    Id(TokenType),
+    Id(String),
 }
