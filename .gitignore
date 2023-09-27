@@ -1,2 +1,5 @@
 /target
 /io
+/junk
+*.tar.gz
+*.code-workspace
