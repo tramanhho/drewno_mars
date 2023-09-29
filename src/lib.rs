@@ -103,7 +103,7 @@ pub fn run(config: Config) {
 
     match config.mode {
         ProcessMode::Tokenize => {
-            let lines: Vec<&str> = input.split("\r\n").collect();
+            let lines: Vec<&str> = input.split('\n').collect();
             tokenizer(lines, config.output)
         },
         ProcessMode::ParseCheck => {

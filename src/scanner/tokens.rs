@@ -1,63 +1,41 @@
 use logos::Logos;
 use std::fmt;
-
 use std::num::ParseIntError;
 
-#[derive(Debug, Default, Logos, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub enum LexingError {
-    InvalidInteger(String),
+    IntliteralOverflow,    
+    StringliteralBadEscape,
+    StringliteralUnterminated,
+    StringliteralUnterminatedBadEscape,
+    Illegal(String), // needed to print which char flagged this
 
     #[default]
-    #[regex(r#"[^\s]"#, priority = 1)]
-    Illegal,
+    NonAsciiCharacter,
 }
 
 /// Error type returned by calling `lex.slice().parse()` to i32.
 impl From<ParseIntError> for LexingError {
-    fn from(err: ParseIntError) -> Self {
-        use std::num::IntErrorKind::*;
-        match err.kind() {
-            PosOverflow | NegOverflow => LexingError::InvalidInteger("overflow error".to_owned()),
-            _ => LexingError::InvalidInteger("other error".to_owned()),
-        }
+    fn from(_err: ParseIntError) -> Self {
+        LexingError::IntliteralOverflow
     }
 }
 
-impl fmt::Display for Token {
+impl fmt::Display for LexingError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-#[derive(Debug)]
-pub struct Token {
-    pub start: usize,
-    pub end: usize,
-    pub token_type: TokenType,
-    pub value: String
-}
-
-impl Token {
-    pub fn new(lex: &mut logos::Lexer<'_, TokenType>, token_type: TokenType ) -> Token {
-        Token {
-            start: lex.span().start + 1,
-            end: lex.span().end + 1,
-            // value: match &token_type {
-            //     TokenType::ID(v) |
-            //     TokenType::STRINGLITERAL(v) | 
-            //     TokenType::Illegal(v)
-            //     => ":".to_owned() + v,
-            //     TokenType::INTLITERAL(v) => ":".to_owned() + v.to_string().as_str(),
-            //     _ => "".to_string()
-            // },
-            value: "".to_string(),
-            token_type: token_type,
+        match self {
+            LexingError::IntliteralOverflow => write!(f, "Integer literal overflow"),
+            LexingError::StringliteralBadEscape => write!(f, "String literal with bad escape sequence detected"),
+            LexingError::StringliteralUnterminated => write!(f, "Unterminated string literal detected"),
+            LexingError::StringliteralUnterminatedBadEscape => write!(f, "Unterminated string literal with bad escape sequence detected"),
+            LexingError::Illegal(v) => write!(f, "Illegal character: {}", v),
+            LexingError::NonAsciiCharacter => write!(f, "Non ASCII character detected"),
         }
     }
 }
 
-#[derive(Logos, Debug, PartialEq, Clone)]
-//#[logos(error = LexingError)]
+#[derive(Debug, Logos, PartialEq, Clone)]
+#[logos(error = LexingError)]
 #[logos(skip r"[ \t\n\f]+")]
 #[logos(skip r#"//.*[\n]?"#)]
 pub enum TokenType {
@@ -117,15 +95,11 @@ pub enum TokenType {
     #[regex(r"[a-zA-Z_][0-9a-zA-Z_]*", priority = 2, callback = |lex| lex.slice().parse().ok())]
     ID(String),
 
-    #[regex(r"[0-9]+", priority = 2, callback = |lex| lex.slice().parse().ok())]
+    #[regex(r"[0-9]+", priority = 2, callback = |lex| lex.slice().parse())]
     INTLITERAL(i32),
-    // #[regex(r"[0-9]+", priority = 2)]
-    // INTLITERAL,
 
     #[regex(r#""(\\[nt"\\]|[^\n"\\])*""#, priority = 2, callback = |lex| lex.slice().parse().ok())]
     STRINGLITERAL(String),
-    // #[regex(r#""(\\[nt"\\]|[^\n"\\])*""#, priority = 2)]
-    // STRINGLITERAL,
 
     //Symbol Operators
     #[regex("=", priority = 3)]
@@ -191,24 +165,43 @@ pub enum TokenType {
     #[regex(r#"\*"#, priority = 3)]
     STAR,
 
-    //illegal
-    #[regex(r#"[^\s]"#, priority = 1, callback = |lex| lex.slice().parse().ok())]
-    Illegal(String),
-
     //string literal with bad escape sequence ignored
-    #[regex(r#""((\\[nt"\\]|[^\n"\\])*(\\[^nt"\\])(\\[nt"\\]|[^\n"\\])*)+""#, priority = 3)]
-    STRINGLITERALBadEscape,
+    #[regex(
+        r#""((\\[nt"\\]|[^\n"\\])*(\\[^nt"\\])(\\[nt"\\]|[^\n"\\])*)+""#, 
+        priority = 3, 
+        callback = |_| Err(LexingError::StringliteralBadEscape)
+    )]
 
     //unterminated string literal ignored \n \t \" \\
-    //#[regex(r#""(\\[nt"\\]|[^\n"\\])*"#, priority = 3)]
-    #[regex(r#""[^\s]"#, priority = 3)]
-    STRINGLITERALUnterminated,
+    #[regex(
+        r#""(\\[nt"\\]|[^\n"\\])*"#, 
+        priority = 3, 
+        callback = |_| Err(LexingError::StringliteralUnterminated)
+    )]
     
     //untermintated string literal with bad escape sequence ignored
-    #[regex(r#""((\\[nt"\\]|[^\n"\\])*(\\[^nt"\\])(\\[nt"\\]|[^\n"\\])*)+"#, priority = 3)]
-    STRINGLITERALUnterminatedBadEscape,
+    #[regex(
+        r#""((\\[nt"\\]|[^\n"\\])*(\\[^nt"\\])(\\[nt"\\]|[^\n"\\])*)+"#, 
+        priority = 3, 
+        callback = |_| Err(LexingError::StringliteralUnterminatedBadEscape)
+    )]
 
-    // //interger literal overflow (int max is 2147483647)
-    #[regex(r#"([1-9][0-9]{10}|[3-9][0-9]{9}|2[2-9][0-9]{8}|21[5-9][0-9]{7}|214[8-9][0-9]{6}|2147[5-9][0-9]{5}|21474[9][0-9]{4}|214748[4-9][0-9]{3}|2147483[7-9][0-9]{2}|21474836[5-9][0-9]|214748364[8-9])([0-9])*"#, priority = 3)]
-    INTLITERALOverflow,
+    //illegal
+    #[regex(
+        r#"[^\s]"#, 
+        priority = 1, 
+        callback = |lex| Err(LexingError::Illegal(lex.slice().parse().ok().unwrap()))
+    )]
+    Null
+}
+
+impl fmt::Display for TokenType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            TokenType::ID(v) =>            write!(f, "ID:{}", v),
+            TokenType::STRINGLITERAL(v) => write!(f, "STRINGLITERAL:{}", v),
+            TokenType::INTLITERAL(v) =>       write!(f, "INTLITERAL:{}", v),
+            _ =>                                    write!(f, "{:?}", self)
+        }
+    }
 }

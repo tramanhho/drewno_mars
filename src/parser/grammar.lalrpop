@@ -1,11 +1,11 @@
-use crate::scanner::tokens::TokenType;
+use crate::scanner::tokens::{TokenType, LexingError};
 use crate::parser::ast;
-use crate::parser::lexer::LexicalError;
+//use crate::parser::lexer::LexicalError;
 grammar;
 
 extern {
   type Location = usize;
-  type Error = LexicalError;
+  type Error = LexingError;
 
   enum TokenType {
     "AND" => TokenType::AND,

@@ -1,8 +1,25 @@
+use std::io::{self, Write};
 use logos::Logos;
-use crate::scanner::tokens::Token;
 use crate::scanner::tokens::TokenType;
 pub mod tokens;
-use std::io::{self, Write};
+
+
+#[cfg(test)]
+mod tests {
+    use logos::Logos;
+    use crate::scanner::tokens::TokenType;
+
+    #[test]
+    fn lex() {
+        let lex = TokenType::lexer(
+            r#"2147483647 2147483648 Jérome "nice" " owo \g owo " "#
+        );
+
+        for token in lex {
+            println!("{:?}", token);
+        }
+    }
+}
 
 pub fn tokenizer(input: Vec<&str>, mut tokens: Box<dyn Write>) {
     let mut scanner = Scanner::new();
@@ -15,9 +32,9 @@ pub fn tokenizer(input: Vec<&str>, mut tokens: Box<dyn Write>) {
     }
     
     let eof = if *input.last().unwrap() == "" {
-        format!("EOF [{},1]", scanner.row + 1)
+        format!("EOF [{},1]\n", scanner.row + 1)
     } else {
-        format!("EOF [{},{}]", scanner.row, scanner.last_col)
+        format!("EOF [{},{}]\n", scanner.row, scanner.last_col)
     };
     
     tokens.write_all(eof.as_bytes()).expect("Error writing to file.");
@@ -38,51 +55,27 @@ impl Scanner {
 
     pub fn tokenize_line(&mut self, stream: &str) -> (String, String) {
         self.row += 1;
-        let mut lex: logos::Lexer<'_, TokenType> = TokenType::lexer(stream);
+        let lex: logos::SpannedIter<'_, TokenType>  = TokenType::lexer(stream).spanned();
         
         // initialize return texts
         let mut text: String = "".to_owned();
         let mut errors: String = "".to_owned();
 
         // iterate through tokens that logos lexer found 
-        loop {
-            let token_type = match lex.next() {
-                Some(v) => v.unwrap(),
-                None => break 
-            };
-
-            let token = Token::new(&mut lex, token_type);
-            //let illegals = [TokenType::INTLITERALOverflow, TokenType::Illegal, TokenType::STRINGLITERALBadEscape, TokenType::STRINGLITERALUnterminated, TokenType::STRINGLITERALUnterminatedBadEscape];
-            let illegals = [TokenType::STRINGLITERALBadEscape, TokenType::STRINGLITERALUnterminated, TokenType::STRINGLITERALUnterminatedBadEscape];
-            //add to whichever text
+        for (result, mut range) in lex {
+            range.start += 1;
+            range.end += 1;
             
-            if illegals.contains(&token.token_type) {
-                errors = format!("{}{}", errors, self.error_msg(&token));
-            } else {
-                text = format!("{}{}", text, self.token_msg(&token));
+            match result {
+                Ok(token) => {
+                    text = format!("{}{:15}\t[{},{}]\n", text, token, self.row, range.start);
+                }
+                Err(e) => {
+                    errors = format!("{}FATAL [{},{}] - [{},{}]: {}\n", errors, self.row, range.start, self.row, range.end, e);
+                }
             }
-            self.last_col = token.end;
+            self.last_col = range.end;
         }
         (text, errors)
     }
-
-    fn token_msg(&self, token: &Token) -> String {
-        format!("{:#?}{}\t[{},{:#?}]\n", token.token_type, token.value, self.row, token.start)
-    }
-
-    fn error_msg(&self, token: &Token) -> String {
-        format!("FATAL [{},{}] - [{},{}]: {}{}\n", self.row, token.start, self.row, token.end, error_handler(&token.token_type), token.value)
-    }
-}
-
-fn error_handler(token_type : &TokenType ) -> &str {
-    ""
-    // match token_type {
-    //     TokenType::INTLITERALOverflow => "Integer literal overflow",
-    //     TokenType::Illegal(v) => ("Illegal character: ".to_owned() + v).as_str(),
-    //     TokenType::STRINGLITERALBadEscape => "String literal with bad escape sequence detected",
-    //     TokenType::STRINGLITERALUnterminated => "Unterminated string literal detected",
-    //     TokenType::STRINGLITERALUnterminatedBadEscape => "Unterminated string literal with bad escape sequence detected",
-    //     _ => ""
-    // }
 }

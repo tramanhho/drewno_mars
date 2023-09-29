@@ -171,7 +171,7 @@ mod tests {
 
     #[test]
     fn parse_term() {
-        let terms = [
+        let terms_good = [
             "a--b--c--d",
             "5273985",
             r#""meow meow meow \t \n""#,
@@ -185,12 +185,23 @@ mod tests {
             "(a-b)",
         ];
 
-        for term in terms.iter() {
+        let terms_bad = [
+            "2147483648",
+            r#""meow meow meow"#,
+            r#""heewoo!??! \g""#,
+            r#""\g"#,
+        ];
+
+        for term in terms_good.iter() {
             assert!(
                 TermParser::new().parse(Lexer::new(term)).is_ok(),
                 "\nThe following input did not pass the parser as intended:\n{}\n", term, 
             );
-            println!("{:?}", TermParser::new().parse(Lexer::new(term)).unwrap());
+            // println!("{:?}", TermParser::new().parse(Lexer::new(term)).unwrap());
+        }
+
+        for term in terms_bad.iter() {
+            println!("{:?}", TermParser::new().parse(Lexer::new(term)));
         }
     }
 
