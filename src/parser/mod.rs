@@ -60,10 +60,14 @@ mod tests {
             let mut result = match parse {
                 ParserType::Program  => ProgramParser::new() .parse(Lexer::new(t)).is_ok(),
 
+                ParserType::Decl  => DeclParser::new() .parse(Lexer::new(t)).is_ok(),
                 ParserType::VarDecl  => VarDeclParser::new() .parse(Lexer::new(t)).is_ok(),
+                ParserType::FnDecl   => FnDeclParser::new() .parse(Lexer::new(t)).is_ok(),
+                ParserType::ClassDecl  => ClassDeclParser::new() .parse(Lexer::new(t)).is_ok(),
+
                 ParserType::Type  => TypeParser::new() .parse(Lexer::new(t)).is_ok(),
                 ParserType::PrimType  => PrimTypeParser::new() .parse(Lexer::new(t)).is_ok(),
-                ParserType::ClassDecl  => ClassDeclParser::new() .parse(Lexer::new(t)).is_ok(),
+                
 
                 ParserType::FormalList  => FormalsListParser::new() .parse(Lexer::new(t)).is_ok(),
                 ParserType::FormalDecl  => FormalDeclParser::new() .parse(Lexer::new(t)).is_ok(),
@@ -122,6 +126,21 @@ mod tests {
 
 
     #[test]
+    fn parse_decl() {
+        let d_good = vec![
+            "a : int;",
+            "a : (a: int) void {}",
+            "a : class {};",
+        ];
+
+        let d_bad = vec![
+            "",
+        ];
+        
+        test_inputs(d_good, Some(d_bad), &ParserType::Decl);
+    }
+
+    #[test]
     fn parse_var_decl() {
         let vd_good = vec![
             "a : int;",
@@ -135,6 +154,21 @@ mod tests {
         test_inputs(vd_good, Some(vd_bad), &ParserType::VarDecl);
     }
 
+    #[test]
+    fn parse_fn_decl() {
+        let fd_good = vec![
+            "main : () void {}",
+            "a : (b: int, c: void) bool {}",
+            "a : (b: int, c: void) void { return; }",
+        ];
+
+        let fd_bad = vec![
+            "a : () int",
+            "a : (b: int = 3) void {}",
+        ];
+        
+        test_inputs(fd_good, Some(fd_bad), &ParserType::FnDecl);
+    }
 
     #[test]
     fn parse_type() {
@@ -217,10 +251,10 @@ mod tests {
     #[test]
     fn parse_stmt() {
         let stmt_good = vec![
-            // "a--a = magic",
-            // "a--b--c--d--e = magic",
-            // "a--",
-            // "a++",
+            "a--a = magic",
+            "a--b--c--d--e = magic",
+            "a--",
+            "a++",
             "give magic;",
             "take a;",
             "take meow_on;",
@@ -238,39 +272,33 @@ mod tests {
         test_inputs(stmt_good, Some(stmt_bad), &ParserType::Stmt);
     }
 
-    // #[test]
-    // fn parse_exp() {
-    //     let exp_good = [
-    //         r#"not (123 + "abc")"#,
-    //         "-nice",
-    //         "!!too hot",
-    //         "abc - abc - abc",
-    //         "abc + abc",
-    //         "abc * abc",
-    //         "abc / abc",
-    //         "abc and abc",
-    //         "abc or abc",
-    //         "abc == abc",
-    //         "abc != abc",
-    //         "abc > abc",
-    //         "abc >= abc",
-    //         "abc < abc",
-    //         "abc <= abc",
-    //         "abc",
-    //     ];
+    #[test]
+    fn parse_exp() {
+        let exp_good = vec![
+            r#"not (123 + "abc")"#,
+            "-nice",
+            "!!too hot",
+            "abc - abc - abc",
+            "abc + abc",
+            "abc * abc",
+            "abc / abc",
+            "abc and abc",
+            "abc or abc",
+            "abc == abc",
+            "abc != abc",
+            "abc > abc",
+            "abc >= abc",
+            "abc < abc",
+            "abc <= abc",
+            "abc",
+        ];
 
-    //     let exp_bad = [
-    //         "abc abc",
-    //     ];
+        let exp_bad = vec![
+            "abc abc",
+        ];
 
-    //     for exp in exp_good.iter() {
-    //         assert!(ExpParser::new().parse(Lexer::new(exp)).is_ok());    
-    //     }
-
-    //     for exp in exp_bad.iter() {
-    //         assert!(ExpParser::new().parse(Lexer::new(exp)).is_err());
-    //     }
-    // }
+        test_inputs(exp_good, Some(exp_bad), &ParserType::Exp);
+    }
 
     #[test]
     fn parse_call_exp() {
@@ -346,7 +374,6 @@ mod tests {
             "a--b--c--d--",
             "--",
         ];
-        
         test_inputs(locs_good, Some(locs_bad),&ParserType::Loc);
     }
 

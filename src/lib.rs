@@ -108,16 +108,16 @@ pub fn run(config: Config) {
         },
         ProcessMode::ParseCheck => {
             let lexer = Lexer::new(&input[..]);
-            // match ProgramParser::new().parse(lexer) {
-            //     Ok(_) => (),
-            //     Err(_) => { eprintln!("syntax error\nParse failed"); },
-            // };
+            match ProgramParser::new().parse(lexer) {
+                Ok(_) => (),
+                Err(_) => { eprintln!("syntax error\nParse failed"); },
+            };
         },
         ProcessMode::ParsePrint => {
-            let lexer = Lexer::new("a : bool = ! true;");
-            //let lexer = Lexer::new(&input[..]);
-            // let ast = ProgramParser::new().parse(lexer).unwrap();
-            // println!("{:?}", ast);
+            // let lexer = Lexer::new("a : bool = ! true;");
+            let lexer = Lexer::new(&input[..]);
+            let ast = ProgramParser::new().parse(lexer).unwrap();
+            println!("{:?}", ast);
         },
     };
 }

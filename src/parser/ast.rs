@@ -32,19 +32,26 @@ pub enum PrimType {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum ClassDecl {
-    Class { id: Box<Id>, member_f: Box<Vec<Box<Decl>>> },
+pub struct ClassDecl {
+    pub id: Box<Id>, 
+    pub member_f: Box<Vec<Box<Decl>>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum FnDecl {
-    FnDecl_Formals{id: Box<Id>, args: Vec<Box<FormalDecl>>, ret: Box<Type>, body: Vec<Box<Stmt>>},
+pub struct FnDecl {
+    pub id: Box<Id>, 
+    pub args: Vec<Box<FormalDecl>>, 
+    pub ret: Box<Type>, 
+    pub body: Vec<Box<Stmt>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum FormalDecl {
     VarDecl(VarDecl),
-    FormalDecl(String, Box<Type>),
+    FormalDecl{
+        id: Box<Id>, 
+        formal_type: Box<Type>,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq)]

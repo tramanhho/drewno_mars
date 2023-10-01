@@ -102,7 +102,7 @@ pub PrimType: ast::PrimType = {
 
 pub ClassDecl: Box<ast::ClassDecl> = {
     <id:Id> "COLON" "CLASS" "LCURLY" <member_f:ClassBody> "RCURLY" "SEMICOL" => Box::new(
-        ast::ClassDecl::Class{
+        ast::ClassDecl {
             id,
             member_f: Box::new(member_f),
         }
@@ -124,7 +124,7 @@ pub ClassBody: Vec<Box<ast::Decl>> = {
 
 pub FnDecl: Box<ast::FnDecl> = {
     <id:Id> "COLON" "LPAREN" <args:FormalsList> "RPAREN" <ret:Type> "LCURLY" <body:StmtList> "RCURLY" => Box::new(
-        ast::FnDecl::FnDecl_Formals{
+        ast::FnDecl {
             id, args, ret, body
         }
     ),
@@ -138,8 +138,11 @@ pub FormalsList = {
 }
 
 pub FormalDecl: Box<ast::FormalDecl> = {
-    <name:"ID"> "COLON" <formal_type: Type> => Box::new(
-        ast::FormalDecl::FormalDecl(name, formal_type)
+    <id:Id> "COLON" <formal_type: Type> => Box::new(
+        ast::FormalDecl::FormalDecl {
+            id, 
+            formal_type
+        }
     ),
 }
 
@@ -248,9 +251,9 @@ pub Term: Box<ast::Exp> = {
     Loc                        => Box::new(ast::Exp::Loc(<>)),
     <val:"INTLITERAL">         => Box::new(ast::Exp::IntLit(val)),
     <string:"STRINGLITERAL">   => Box::new(ast::Exp::StrLit(string)),
-    <val: "TRUE">              => Box::new(ast::Exp::True),
-    <val: "FALSE">             => Box::new(ast::Exp::False),
-    <val: "MAGIC">             => Box::new(ast::Exp::Magic),
+    "TRUE"                     => Box::new(ast::Exp::True),
+    "FALSE"                    => Box::new(ast::Exp::False),
+    "MAGIC"                    => Box::new(ast::Exp::Magic),
     "LPAREN" <e: Exp> "RPAREN" => e,
     CallExp                    => Box::new(ast::Exp::CallExp(<>)),
 };
