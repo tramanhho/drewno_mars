@@ -1,18 +1,7 @@
-// //AST program
-// #[derive(Clone, Debug, PartialEq)]
-// pub enum Program {
-//     Program(Box<Globals>),
-// }
-
-
-// //AST globals
-// #[derive(Clone, Debug, PartialEq)]
-// pub enum Globals {
-//     Globals_Decl(Box<Globals>, Box<Decl>),
-//     Globals_Epsilon(),
-// }
-
-
+#[derive(Clone, Debug, PartialEq)]
+pub struct Program {
+    pub globals: Vec<Box<Decl>>
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Decl {
@@ -21,10 +10,9 @@ pub enum Decl {
     FnDecl(Box<FnDecl>),
 }
 
-
 #[derive(Clone, Debug, PartialEq)]
 pub enum VarDecl {
-    Variable { var_type: Box<Type>, id: Box<Id>, init_val: Option<Box<Exp>> }
+    VarDecl { var_type: Box<Type>, id: Box<Id>, init_val: Option<Box<Exp>> },
 }
 
 
@@ -43,7 +31,6 @@ pub enum PrimType {
     Void,
 }
 
-
 #[derive(Clone, Debug, PartialEq)]
 pub enum ClassDecl {
     Class { id: Box<Id>, member_f: Box<Vec<Box<Decl>>> },
@@ -51,30 +38,30 @@ pub enum ClassDecl {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum FnDecl {
-    FnDecl_Formals{id: Box<Id>, args: Vec<Box<FormalDecl>>, ret: Box<Type>, body: Box<StmtList>},
+    FnDecl_Formals{id: Box<Id>, args: Vec<Box<FormalDecl>>, ret: Box<Type>, body: Vec<Box<Stmt>>},
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum FormalDecl {
+    VarDecl(VarDecl),
     FormalDecl(String, Box<Type>),
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum StmtList {
-    StmtList(Box<StmtList>, Box<Stmt>),
-    Epsilon(),
+pub enum Stmt {
+    Block(Box<BlockStmt>),
+    Line(Box<LineStmt>),
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum Stmt {
-    // block statements
-    // While  {cond: Box<Exp>, body: Vec<Box<Stmt>> },
-    // If     {cond: Box<Exp>, body: Vec<Box<Stmt>> } ,
-    // IfElse {cond: Box<Exp>, true_branch: Vec<Box<Stmt>>, false_branch: Vec<Box<Stmt>> },
-    While  {cond: Box<Exp>, body: Box<StmtList> },
-    If     {cond: Box<Exp>, body: Box<StmtList> } ,
-    IfElse {cond: Box<Exp>, true_branch: Box<StmtList>, false_branch: Box<StmtList> },
+pub enum BlockStmt {
+    While  {cond: Box<Exp>, body: Vec<Box<Stmt>> },
+    If     {cond: Box<Exp>, body: Vec<Box<Stmt>> } ,
+    IfElse {cond: Box<Exp>, true_branch: Vec<Box<Stmt>>, false_branch: Vec<Box<Stmt>> },
+}
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum LineStmt {
     // declarations
     Decl(Box<Decl>),
 
@@ -88,7 +75,6 @@ pub enum Stmt {
     Exit,
     Call(Box<CallExp>),
 }
-
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Exp {

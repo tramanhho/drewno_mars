@@ -14,7 +14,6 @@ mod tests {
 
     pub enum ParserType {
         Program,
-        Globals,
 
         Decl,
         VarDecl,
@@ -59,6 +58,8 @@ mod tests {
     fn test_inputs_helper(tests: Vec<&'static str>, parse: &ParserType, input: &InputType) {
         for t in tests.iter() {
             let mut result = match parse {
+                ParserType::Program  => ProgramParser::new() .parse(Lexer::new(t)).is_ok(),
+
                 ParserType::VarDecl  => VarDeclParser::new() .parse(Lexer::new(t)).is_ok(),
                 ParserType::Type  => TypeParser::new() .parse(Lexer::new(t)).is_ok(),
                 ParserType::PrimType  => PrimTypeParser::new() .parse(Lexer::new(t)).is_ok(),
@@ -93,49 +94,38 @@ mod tests {
         }
     }
 
-    // #[test]
-    // fn parse_program() {
-    //     let program_good = [
-    //         "a : bool = ! true;",
-    //         "a : bool = !!too hot;",
-    //         "myClass:class {
-    //             a:int = 12;
-    //             b:int;
-    //             c:perfect bool;
-    //         };",
-    //         "myClass:class {};",
-    //     ];
+    #[test]
+    fn parse_program() {
+        let program_good = vec![
+            "a : bool = true;",
+            "a : bool = too hot;",
+            "myClass:class {
+                a:int = 12;
+                b:int;
+                c:perfect bool;
+            };",
+            "myClass:class {};",
+        ];
 
-    //     let program_bad = [
-    //         "main();",
-    //         "myClass:class {
-    //             a:int = 12
-    //             b:int
-    //             c:perfect bool
-    //         };",
-    //     ];
-    //     for prog in program_good.iter() {
-    //         // println!("{:?}\n", ProgramParser::new().parse(Lexer::new(prog)).unwrap());
-    //         assert!(
-    //             ProgramParser::new().parse(Lexer::new(prog)).is_ok(),
-    //             "\nThe following input did not pass the parser as intended:\n{}\n", prog, 
-    //         ); 
-    //     }
+        let program_bad = vec![
+            "main();",
+            "myClass:class {
+                a:int = 12
+                b:int
+                c:perfect bool
+            };",
+        ];
+        
 
-    //     for prog in program_bad.iter() {
-    //         assert!(
-    //             ProgramParser::new().parse(Lexer::new(prog)).is_err(),
-    //             "\nThe following input did not fail the parser as intended:\n{:?}\n", prog, 
-    //         );
-    //     }
-    // }
+        test_inputs(program_good, Some(program_bad), &ParserType::Program);
+    }
 
 
     #[test]
     fn parse_var_decl() {
         let vd_good = vec![
-            "a : int",
-            "a : int = 123",
+            "a : int;",
+            "a : int = 123;",
         ];
 
         let vd_bad = vec![
@@ -231,21 +221,20 @@ mod tests {
             // "a--b--c--d--e = magic",
             // "a--",
             // "a++",
-            "give magic",
-            "take a",
-            "take meow_on",
-            "return true",
-            "return",
-            "today I don't feel like doing any work",
-            "abc()",
-            "owo(uwu)",
+            "give magic;",
+            "take a;",
+            "take meow_on;",
+            "return true;",
+            "return;",
+            "today I don't feel like doing any work;",
+            "abc();",
+            "owo(uwu);",
         ];
 
         let stmt_bad = vec![
             "take a-b",
             "abc--abc a--c",
         ];
-        
         test_inputs(stmt_good, Some(stmt_bad), &ParserType::Stmt);
     }
 
