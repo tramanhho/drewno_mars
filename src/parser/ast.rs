@@ -13,19 +13,18 @@
 // }
 
 
-// //AST decl
-// #[derive(Clone, Debug, PartialEq)]
-// pub enum Decl {
-//     Decl_VarDecl(Box<VarDecl>, TokenType),
-//     Decl_ClassDecl(Box<ClassDecl>),
-//     Decl_FnDecl(Box<FnDecl>),
-// }
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum Decl {
+    VarDecl(Box<VarDecl>),
+    ClassDecl(Box<ClassDecl>),
+    FnDecl(Box<FnDecl>),
+}
 
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum VarDecl {
-    Variable { var_type: Box<Type>, id: Box<Id> }
-    // Variable { var_type: Type, id: Id, init_val: Option<Box<Exp>> }
+    Variable { var_type: Box<Type>, id: Box<Id>, init_val: Option<Box<Exp>> }
 }
 
 
@@ -44,77 +43,52 @@ pub enum PrimType {
     Void,
 }
 
-// //AST classDecl
-// #[derive(Clone, Debug, PartialEq)]
-// pub enum ClassDecl {
-//     ClassDecl(Box<Id>, TokenType, TokenType, TokenType, Box<ClassBody>, TokenType, TokenType),
-// }
 
-// //AST classBody
-// #[derive(Clone, Debug, PartialEq)]
-// pub enum ClassBody {
-//     ClassBody_VarDecl(Box<ClassBody>, Box<VarDecl>, TokenType),
-//     ClassBody_FnDecl(Box<ClassBody>, Box<FnDecl>, TokenType),
-//     ClassBody_Epsilon(),
-// }
+#[derive(Clone, Debug, PartialEq)]
+pub enum ClassDecl {
+    Class { id: Box<Id>, member_f: Box<Vec<Box<Decl>>> },
+}
 
-// //AST fnDecl
-// #[derive(Clone, Debug, PartialEq)]
-// pub enum FnDecl {
-//     FnDecl_Formals(Box<Id>, TokenType, TokenType, Box<Formals>, TokenType, Box<Type>, TokenType, Box<StmtList>, TokenType),
-//     //fnDecl(Box<Id>, TokenType, TokenType, TokenType, Box<Type>, TokenType, Box<StmtList>, TokenType),
-// }
-
-// //AST formals
-// #[derive(Clone, Debug, PartialEq)]
-// pub enum Formals {
-//     Formals_FormalsList(Box<FormalsList>),
-//     Formals_Epsilon(),
-// }
-
-// //AST formalsList
-// #[derive(Clone, Debug, PartialEq)]
-// pub enum FormalsList {
-//     FormalsList_FormalDecl(Box<FormalDecl>),
-//     FormalsList(Box<FormalsList>, TokenType, Box<FormalDecl>),
-// }
-
+#[derive(Clone, Debug, PartialEq)]
+pub enum FnDecl {
+    FnDecl_Formals{id: Box<Id>, args: Vec<Box<FormalDecl>>, ret: Box<Type>, body: Box<StmtList>},
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum FormalDecl {
     FormalDecl(String, Box<Type>),
 }
 
-// //AST stmtList
-// #[derive(Clone, Debug, PartialEq)]
-// pub enum StmtList {
-//     StmtList_StmtList(Box<StmtList>, Box<Stmt>, TokenType),
-//     StmtList_BlockStmt(Box<StmtList>, Box<BlockStmt>),
-//     StmtList_Epsilon(),
-// }
+#[derive(Clone, Debug, PartialEq)]
+pub enum StmtList {
+    StmtList(Box<StmtList>, Box<Stmt>),
+    Epsilon(),
+}
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum Stmt {
+    // block statements
+    // While  {cond: Box<Exp>, body: Vec<Box<Stmt>> },
+    // If     {cond: Box<Exp>, body: Vec<Box<Stmt>> } ,
+    // IfElse {cond: Box<Exp>, true_branch: Vec<Box<Stmt>>, false_branch: Vec<Box<Stmt>> },
+    While  {cond: Box<Exp>, body: Box<StmtList> },
+    If     {cond: Box<Exp>, body: Box<StmtList> } ,
+    IfElse {cond: Box<Exp>, true_branch: Box<StmtList>, false_branch: Box<StmtList> },
 
-// //AST blockStmt
-// #[derive(Clone, Debug, PartialEq)]
-// pub enum BlockStmt {
-//     BlockStmt_While(TokenType, TokenType, Box<Exp>, TokenType, TokenType, Box<StmtList>, TokenType),
-//     BlockStmt_If(TokenType, TokenType, Box<Exp>, TokenType, TokenType, Box<StmtList>, TokenType),
-//     BlockStmt_IfElse(TokenType, TokenType, Box<Exp>, TokenType, TokenType, Box<StmtList>, TokenType, TokenType, TokenType, Box<StmtList>, TokenType),
-// }
-// //AST stmt
-// #[derive(Clone, Debug, PartialEq)]
-// pub enum Stmt {
-//     Stmt_VarDecl(Box<VarDecl>),
-//     Stmt_Assign(Box<Loc>, TokenType, Box<Exp>),
-//     Stmt_PostDec(Box<Loc>, TokenType),
-//     Stmt_PostInc(Box<Loc>, TokenType),
-//     Stmt_Give(TokenType, Box<Exp>),
-//     Stmt_Take(TokenType, Box<Loc>),
-//     Stmt_ReturnExp(TokenType, Box<Exp>),
-//     Stmt_Return(TokenType),
-//     Stmt_Exit(TokenType),
-//     Stmt_CallExp(Box<CallExp>),
-// }
+    // declarations
+    Decl(Box<Decl>),
+
+    // keyword centric
+    Assign { dest: Box<Loc>, src: Box<Exp> },
+    PostDec(Box<Loc>),
+    PostInc(Box<Loc>),
+    Give(Box<Exp>),
+    Take(Box<Loc>),
+    Return(Option<Box<Exp>>),
+    Exit,
+    Call(Box<CallExp>),
+}
+
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Exp {

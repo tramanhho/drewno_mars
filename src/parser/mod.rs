@@ -13,17 +13,32 @@ mod tests {
     use super::grammar::*;
 
     pub enum ParserType {
+        Program,
+        Globals,
+
+        Decl,
+        VarDecl,
+
         Type,
         PrimType,
 
+        ClassDecl,
+        ClassBody,
+
+        FnDecl,
+
         FormalList,
         FormalDecl,
-        
-        // Exp,
-        // ActualsList,
-        CallExp,
+
+        StmtList,
+        BlockStmt,
+        Stmt,
+
         Exp,
+        ActualsList,
+        CallExp,
         Term,
+
         Loc,
         Id,
     }
@@ -44,28 +59,33 @@ mod tests {
     fn test_inputs_helper(tests: Vec<&'static str>, parse: &ParserType, input: &InputType) {
         for t in tests.iter() {
             let mut result = match parse {
+                ParserType::VarDecl  => VarDeclParser::new() .parse(Lexer::new(t)).is_ok(),
                 ParserType::Type  => TypeParser::new() .parse(Lexer::new(t)).is_ok(),
                 ParserType::PrimType  => PrimTypeParser::new() .parse(Lexer::new(t)).is_ok(),
+                ParserType::ClassDecl  => ClassDeclParser::new() .parse(Lexer::new(t)).is_ok(),
 
                 ParserType::FormalList  => FormalsListParser::new() .parse(Lexer::new(t)).is_ok(),
                 ParserType::FormalDecl  => FormalDeclParser::new() .parse(Lexer::new(t)).is_ok(),
                 
-                // ParserType::ActualsList  => ActualsListParser::new() .parse(Lexer::new(t)).is_ok(),
+                ParserType::StmtList  => StmtListParser::new() .parse(Lexer::new(t)).is_ok(),
+                ParserType::Stmt  => StmtParser::new() .parse(Lexer::new(t)).is_ok(),
                 ParserType::CallExp  => CallExpParser::new() .parse(Lexer::new(t)).is_ok(),
                 ParserType::Exp  => ExpParser::new() .parse(Lexer::new(t)).is_ok(),
+                ParserType::ActualsList  => ActualsListParser::new() .parse(Lexer::new(t)).is_ok(),
                 ParserType::Term => TermParser::new().parse(Lexer::new(t)).is_ok(),
                 ParserType::Loc  => LocParser::new() .parse(Lexer::new(t)).is_ok(),
                 ParserType::Id   => IdParser::new()  .parse(Lexer::new(t)).is_ok(),
+                _ => false
             };
             
             let err_string : String;
             match input {
                 InputType::Good => {
-                    err_string = format!("\nThe following input did not pass the parser as intended:\n{}\n", t)
+                    err_string = format!("\nThe following input did not pass the parser as intended:\n\t{}\n", t)
                 },
                 InputType::Bad => {
                     result = !result;
-                    err_string = format!("\nThe following input did not fail the parser as intended:\n{}\n", t)
+                    err_string = format!("\nThe following input did not fail the parser as intended:\n\t{}\n", t)
                 }
             };
 
@@ -110,9 +130,25 @@ mod tests {
     //     }
     // }
 
+
+    #[test]
+    fn parse_var_decl() {
+        let vd_good = vec![
+            "a : int",
+            "a : int = 123",
+        ];
+
+        let vd_bad = vec![
+            "a : int =",
+        ];
+        
+        test_inputs(vd_good, Some(vd_bad), &ParserType::VarDecl);
+    }
+
+
     #[test]
     fn parse_type() {
-        let type_good = [
+        let type_good = vec![
             "int",
             "bool",
             "void",
@@ -121,111 +157,97 @@ mod tests {
             "perfect _nya",
         ];
 
-        let type_bad = [
+        let type_bad = vec![
             "perfect",
             "perfect 123",
         ];
         
-        for t in type_good.iter() {
-            assert!(
-                TypeParser::new().parse(Lexer::new(t)).is_ok(),
-                "\nThe following input did not pass the parser as intended:\n{}\n", t, 
-            );
-            println!("{:?}", TypeParser::new().parse(Lexer::new(t)).unwrap());
-        }
-
-        for t in type_bad.iter() {
-            assert!(TypeParser::new().parse(Lexer::new(t)).is_err());
-        }
+        test_inputs(type_good, Some(type_bad), &ParserType::Type);
     }
 
     #[test]
     fn parse_prim_type() {
-        let prim_type = [
+        let prim_type = vec![
             "int",
             "bool",
             "void",
         ];
         
-        for pt in prim_type.iter() {
-            assert!(
-                PrimTypeParser::new().parse(Lexer::new(pt)).is_ok(),
-                "\nThe following input did not pass the parser as intended:\n{}\n", pt, 
-            );
-            println!("{:?}", PrimTypeParser::new().parse(Lexer::new(pt)).unwrap());
-        }
+        test_inputs(prim_type, None, &ParserType::PrimType);
+    }
+
+    #[test]
+    fn parse_class_decl() {
+        let cd_good = vec![
+            "a : class {};",
+            "a : class {b : int; c : int;};",
+        ];
+        
+        // println!("{:?}", ClassDeclParser::new().parse(Lexer::new("a : class {};")));
+        test_inputs(cd_good, None, &ParserType::ClassDecl);
     }
 
     
     #[test]
     fn parse_formal_list() {
-        let fd_good = [
+        let fd_good = vec![
             "a: int, b: void, c: owo",
             "_owo : int",
             "",
         ];
         
-        for fd in fd_good.iter() {
-            assert!(
-                FormalsListParser::new().parse(Lexer::new(fd)).is_ok(),
-                "\nThe following input did not pass the parser as intended:\n{}\n", fd, 
-            );
-            println!("{:?}", FormalsListParser::new().parse(Lexer::new(fd)).unwrap());
-        }
+        test_inputs(fd_good, None, &ParserType::FormalList);
     }
 
     #[test]
     fn parse_formal_decl() {
-        let fd_good = [
+        let fd_good = vec![
             "meow : perfect _nya",
             "_owo : int",
         ];
         
-        for fd in fd_good.iter() {
-            assert!(
-                FormalDeclParser::new().parse(Lexer::new(fd)).is_ok(),
-                "\nThe following input did not pass the parser as intended:\n{}\n", fd, 
-            );
-            println!("{:?}", FormalDeclParser::new().parse(Lexer::new(fd)).unwrap());
-        }
+        test_inputs(fd_good, None, &ParserType::FormalDecl);
     }
 
-    // #[test]
-    // fn parse_stmt() {
-    //     let stmt_good = [
-    //         "a--a = magic",
-    //         "a--b--c--d--e = magic",
-    //         "a--",
-    //         "a++",
-    //         "give magic",
-    //         "take a--b",
-    //         "take meow_on",
-    //         "return true",
-    //         "return",
-    //         "today I don't feel like doing any work",
-    //         "abc()",
-    //         "owo(uwu)",
-    //     ];
+    #[test]
+    fn parse_stmt_list() {
+        let stmt_list_good = vec![
+            "return;",
+            "return; return;",
+            "return; if (true) {}",
+        ];
 
-    //     let stmt_bad = [
-    //         "take a-b",
-    //         "abc--abc a--c",
-    //     ];
+        let stmt_list_bad = vec![
+            "return"
+        ];
+        //println!("{:?}", StmtListParser::new().parse(Lexer::new("return; return;")));
+        test_inputs(stmt_list_good, Some(stmt_list_bad), &ParserType::StmtList);
+    }
+
+    #[test]
+    fn parse_stmt() {
+        let stmt_good = vec![
+            // "a--a = magic",
+            // "a--b--c--d--e = magic",
+            // "a--",
+            // "a++",
+            "give magic",
+            "take a",
+            "take meow_on",
+            "return true",
+            "return",
+            "today I don't feel like doing any work",
+            "abc()",
+            "owo(uwu)",
+        ];
+
+        let stmt_bad = vec![
+            "take a-b",
+            "abc--abc a--c",
+        ];
         
-    //     for stmt in stmt_good.iter() {
-    //         assert!(
-    //             StmtParser::new().parse(Lexer::new(stmt)).is_ok(),
-    //             "\nThe following input did not pass the parser as intended:\n{}\n", stmt, 
-    //         );
-    //     }
-
-        // for stmt in stmt_bad.iter() {
-        //     assert!(
-        //         StmtParser::new().parse(Lexer::new(stmt)).is_err(),
-        //         "\nThe following input did not fail the parser as intended:\n{:?}\n", stmt, 
-        //     );
-        // }
-    // }
+        test_inputs(stmt_good, Some(stmt_bad), &ParserType::Stmt);
+    }
 
     // #[test]
     // fn parse_exp() {
@@ -293,8 +315,7 @@ mod tests {
             ",",
             "true, ",
         ];
-
-        // test_inputs(actuals_lists_good, Some(actuals_lists_bad), &ParserType::ActualsList);
+        test_inputs(actuals_lists_good, Some(actuals_lists_bad), &ParserType::ActualsList);
     }
 
     #[test]

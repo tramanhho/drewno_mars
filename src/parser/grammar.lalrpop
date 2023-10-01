@@ -53,14 +53,14 @@ extern {
 }
 
 Comma<T>: Vec<T> = { 
-    <mut v:(<T> "COMMA")*> <e:T?> => match e { 
-        None => v,
-        Some(e) => {
-            v.push(e);
-            v
-        }
-    }
+    <mut v:(<T> "COMMA")*> <e:T> => {
+        v.push(e);
+        return v;
+    },
+    => Vec::new()
 };
+
+
 
 // //program
 // pub Program: Box<ast::Program> = {
@@ -73,27 +73,27 @@ Comma<T>: Vec<T> = {
 //     => Box::new(ast::Globals::Globals_Epsilon(<>)),
 // }
 
-// //decl
-// pub Decl: Box<ast::Decl> = {
-//     VarDecl "SEMICOL" => Box::new(ast::Decl::Decl_VarDecl(<>)),
-//     ClassDecl => Box::new(ast::Decl::Decl_ClassDecl(<>)),
-//     FnDecl => Box::new(ast::Decl::Decl_FnDecl(<>)),
-// }
+pub Decl: Box<ast::Decl> = {
+    <v:VarDecl> "SEMICOL" => Box::new(ast::Decl::VarDecl(v)),
+    ClassDecl => Box::new(ast::Decl::ClassDecl(<>)),
+    FnDecl => Box::new(ast::Decl::FnDecl(<>)),
+}
 
 pub VarDecl: Box<ast::VarDecl> = {
     <id:Id> "COLON" <var_type: Type> => Box::new(
         ast::VarDecl::Variable{
             id, 
-            var_type
+            var_type,
+            init_val: None,
         }
     ),
-    // <id:Id> "COLON" <var_type: Type> "ASSIGN" <init_val: Exp> => Box::new(
-    //     ast::VarDecl::Variable(
-    //         id, 
-    //         var_type
-    //         init_val
-    //     )
-    // ),
+    <id:Id> "COLON" <var_type: Type> "ASSIGN" <init_val: Exp> => Box::new(
+        ast::VarDecl::Variable{
+            id, 
+            var_type,
+            init_val: Some(init_val),
+        }
+    ),
 }
 
 pub Type: Box<ast::Type> = {
@@ -109,24 +109,35 @@ pub PrimType: ast::PrimType = {
     "VOID" => ast::PrimType::Void,
 }
 
-// //ClassDecl
-// pub ClassDecl: Box<ast::ClassDecl> = {
-//     Id "COLON" "CLASS" "LCURLY" ClassBody "RCURLY" "SEMICOL" => Box::new(ast::ClassDecl::ClassDecl(<>)),
-// }
+pub ClassDecl: Box<ast::ClassDecl> = {
+    <id:Id> "COLON" "CLASS" "LCURLY" <member_f:ClassBody> "RCURLY" "SEMICOL" => Box::new(
+        ast::ClassDecl::Class{
+            id,
+            member_f: Box::new(member_f),
+        }
+    ),
+}
 
-// //classBody
-// pub ClassBody: Box<ast::ClassBody> = {
-//     ClassBody VarDecl "SEMICOL" => Box::new(ast::ClassBody::ClassBody_VarDecl(<>)),
-//     ClassBody FnDecl "SEMICOL" => Box::new(ast::ClassBody::ClassBody_FnDecl(<>)),
-//     => Box::new(ast::ClassBody::ClassBody_Epsilon(<>)),
+pub ClassBody: Vec<Box<ast::Decl>> = {
+    <mut vec:(Decl)*> <new_var:VarDecl> "SEMICOL" => {
+        vec.push(Box::new(ast::Decl::VarDecl(new_var)));
+        vec
+    },
+    <mut vec:(Decl)*> <new_fn:FnDecl> => {
+        vec.push(Box::new(ast::Decl::FnDecl(new_fn)));
+        vec
+    },
+    => Vec::<Box<ast::Decl>>::new(),
+}
 
-// }
 
-// //FnDecl
-// pub FnDecl: Box<ast::FnDecl> = {
-//     Id "COLON" "LPAREN" Formals "RPAREN" Type "LCURLY" StmtList "RCURLY" => Box::new(ast::FnDecl::FnDecl_Formals(<>)),
-//     //Id "COLON" "LPAREN" "RPAREN" Type "LCURLY" StmtList "RCURLY" => Box::new(ast::FnDecl::FnDecl(<>)),
-// }
+pub FnDecl: Box<ast::FnDecl> = {
+    <id:Id> "COLON" "LPAREN" <args:FormalsList> "RPAREN" <ret:Type> "LCURLY" <body:StmtList> "RCURLY" => Box::new(
+        ast::FnDecl::FnDecl_Formals{
+            id, args, ret, body
+        }
+    ),
+}
 
 pub FormalsList = {
     Comma<FormalDecl>
@@ -141,34 +152,50 @@ pub FormalDecl: Box<ast::FormalDecl> = {
     ),
 }
 
-
-// //stmtList
-// pub StmtList: Box<ast::StmtList> = {
-//     StmtList Stmt "SEMICOL" => Box::new(ast::StmtList::StmtList_StmtList(<>)),
-//     StmtList BlockStmt => Box::new(ast::StmtList::StmtList_BlockStmt(<>)),
-//     => Box::new(ast::StmtList::StmtList_Epsilon(<>)),
+// pub StmtList: Vec<Box<ast::Stmt>> = {
+//     //<v:(<Stmt> "SEMICOL")*> => v,
+//     <mut vec:(Stmt)*> <new_stmt:Stmt> "SEMICOL" => {
+//         vec.push(new_stmt);
+//         vec
+//     },
+//     <mut vec:(Stmt)*> <new_block:BlockStmt> => {
+//         vec.push(new_block);
+//         vec
+//     },
 // }
 
-// //blockStmt
-// pub BlockStmt: Box<ast::BlockStmt> = {
-//     "WHILE" "LPAREN" Exp "RPAREN" "LCURLY" StmtList "RCURLY" => Box::new(ast::BlockStmt::BlockStmt_While(<>)),
-//     "IF" "LPAREN" Exp "RPAREN" "LCURLY" StmtList "RCURLY" => Box::new(ast::BlockStmt::BlockStmt_If(<>)),
-//     "IF" "LPAREN" Exp "RPAREN" "LCURLY" StmtList "RCURLY" "ELSE" "LCURLY" StmtList "RCURLY" => Box::new(ast::BlockStmt::BlockStmt_IfElse(<>)),
-// }
+//stmtList
+pub StmtList: Box<ast::StmtList> = {
+    <list:StmtList> <item:Stmt> "SEMICOL" => Box::new(ast::StmtList::StmtList(list, item)),
+    StmtList BlockStmt => Box::new(ast::StmtList::StmtList(<>)),
+    => Box::new(ast::StmtList::Epsilon(<>)),
+}
 
-// //stmt
-// pub Stmt: Box<ast::Stmt> = {
-//     VarDecl => Box::new(ast::Stmt::Stmt_VarDecl(<>)),
-//     Loc "ASSIGN" Exp => Box::new(ast::Stmt::Stmt_Assign(<>)),
-//     Loc "POSTDEC" => Box::new(ast::Stmt::Stmt_PostDec(<>)),
-//     Loc "POSTINC" => Box::new(ast::Stmt::Stmt_PostInc(<>)),
-//     "GIVE" Exp => Box::new(ast::Stmt::Stmt_Give(<>)),
-//     "TAKE" Loc => Box::new(ast::Stmt::Stmt_Take(<>)),
-//     "RETURN" Exp => Box::new(ast::Stmt::Stmt_ReturnExp(<>)),
-//     "RETURN" => Box::new(ast::Stmt::Stmt_Return(<>)),
-//     "EXIT" => Box::new(ast::Stmt::Stmt_Exit(<>)),
-//     CallExp => Box::new(ast::Stmt::Stmt_CallExp(<>)),
-// }
+pub BlockStmt: Box<ast::Stmt> = {
+    "WHILE" "LPAREN" <cond: Exp> "RPAREN" "LCURLY" <body: StmtList> "RCURLY" => Box::new(
+        ast::Stmt::While{cond, body}
+    ),
+    "IF" "LPAREN" <cond: Exp> "RPAREN" "LCURLY" <body: StmtList> "RCURLY" => Box::new(
+        ast::Stmt::If{cond, body}
+    ),
+    "IF" "LPAREN" <cond: Exp> "RPAREN" "LCURLY" <true_branch: StmtList> "RCURLY" 
+    "ELSE" "LCURLY" <false_branch: StmtList> "RCURLY" => Box::new(
+        ast::Stmt::IfElse{cond, true_branch, false_branch}
+    ),
+}
+
+pub Stmt: Box<ast::Stmt> = {
+    Decl                          => Box::new(ast::Stmt::Decl(<>)),
+    <dest:Loc> "ASSIGN" <src:Exp> => Box::new(ast::Stmt::Assign { dest, src }),
+    <loc:Loc> "POSTDEC"           => Box::new(ast::Stmt::PostDec(loc)),
+    <loc:Loc> "POSTINC"           => Box::new(ast::Stmt::PostInc(loc)),
+    "GIVE" <output:Exp>           => Box::new(ast::Stmt::Give(output)),
+    "TAKE" <recipient:Loc>        => Box::new(ast::Stmt::Take(recipient)),
+    "RETURN" <ret:Exp>            => Box::new(ast::Stmt::Return(Some(ret))),
+    "RETURN"                      => Box::new(ast::Stmt::Return(None)),
+    "EXIT"                        => Box::new(ast::Stmt::Exit),
+    CallExp                       => Box::new(ast::Stmt::Call(<>)),
+}
 
 //Exp
 pub Exp: Box<ast::Exp> = {
