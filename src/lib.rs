@@ -3,11 +3,10 @@ use std::fs::File;
 use std::io::{self, Write};
 
 mod scanner;
-use scanner::tokenizer;
+use scanner::{tokenizer, lexer::Lexer};
 
 mod parser;
-use parser::grammar::*;
-use parser::lexer::Lexer;
+use parser::{unparse, grammar::*};
 
 pub struct Config {
     input: String,
@@ -114,10 +113,15 @@ pub fn run(config: Config) {
             };
         },
         ProcessMode::ParsePrint => {
-            // let lexer = Lexer::new("a : bool = ! true;");
             let lexer = Lexer::new(&input[..]);
-            let ast = ProgramParser::new().parse(lexer).unwrap();
-            println!("{:?}", ast);
+            let mut output = config.output;
+            match ProgramParser::new().parse(lexer) {
+                Ok(x) => output
+                .write_all(unparse(x).as_bytes())
+                .expect("Error writing to output file."),
+
+                Err(x) => { eprintln!("Parse failed: {:?}", x); },
+            };
         },
     };
 }

@@ -1,6 +1,5 @@
 use crate::scanner::tokens::{TokenType, LexingError};
 use crate::parser::ast;
-//use crate::parser::lexer::LexicalError;
 grammar;
 
 extern {
@@ -72,14 +71,14 @@ pub Decl: Box<ast::Decl> = {
 
 pub VarDecl: Box<ast::VarDecl> = {
     <id:Id> "COLON" <var_type: Type> "SEMICOL" => Box::new(
-        ast::VarDecl::VarDecl{
+        ast::VarDecl {
             id, 
             var_type,
             init_val: None,
         }
     ),
     <id:Id> "COLON" <var_type: Type> "ASSIGN" <init_val: Exp> "SEMICOL" => Box::new(
-        ast::VarDecl::VarDecl{
+        ast::VarDecl {
             id, 
             var_type,
             init_val: Some(init_val),
@@ -91,7 +90,7 @@ pub Type: Box<ast::Type> = {
     PrimType => Box::new(ast::Type::Prim(<>)),
     Id => Box::new(ast::Type::Class(<>)),
     "PERFECT" <prim_type: PrimType> => Box::new(ast::Type::PerfectPrim(prim_type)),
-    "PERFECT" <name:"ID"> => Box::new(ast::Type::PerfectClass(name)),
+    "PERFECT" <name:Id> => Box::new(ast::Type::PerfectClass(name)),
 }
 
 pub PrimType: ast::PrimType = {
@@ -153,6 +152,7 @@ pub StmtList: Vec<Box<ast::Stmt>> = {
 pub Stmt: Box<ast::Stmt> = {
     <bs:BlockStmt> => Box::new(ast::Stmt::Block(bs)),
     <s:LineStmt> "SEMICOL" => Box::new(ast::Stmt::Line(s)),
+    VarDecl => Box::new(ast::Stmt::VarDecl(<>)),
 }
 
 pub BlockStmt: Box<ast::BlockStmt> = {
@@ -169,23 +169,80 @@ pub BlockStmt: Box<ast::BlockStmt> = {
 }
 
 pub LineStmt: Box<ast::LineStmt> = {
-    Decl                          => Box::new(ast::LineStmt::Decl(<>)),
-    <dest:Loc> "ASSIGN" <src:Exp> => Box::new(ast::LineStmt::Assign { dest, src }),
-    <loc:Loc> "POSTDEC"           => Box::new(ast::LineStmt::PostDec(loc)),
-    <loc:Loc> "POSTINC"           => Box::new(ast::LineStmt::PostInc(loc)),
-    "GIVE" <output:Exp>           => Box::new(ast::LineStmt::Give(output)),
-    "TAKE" <recipient:Loc>        => Box::new(ast::LineStmt::Take(recipient)),
-    "RETURN" <ret:Exp>            => Box::new(ast::LineStmt::Return(Some(ret))),
-    "RETURN"                      => Box::new(ast::LineStmt::Return(None)),
+    <dest:Loc> "ASSIGN" <src:Exp> => Box::new(ast::LineStmt::Assign{dest, src}),
+    <loc:Loc> "POSTDEC"           => Box::new(ast::LineStmt::PostDec{loc}),
+    <loc:Loc> "POSTINC"           => Box::new(ast::LineStmt::PostInc{loc}),
+    "GIVE" <output:Exp>           => Box::new(ast::LineStmt::Give{output}),
+    "TAKE" <recipient:Loc>        => Box::new(ast::LineStmt::Take{recipient}),
+    "RETURN" <result:Exp>         => Box::new(ast::LineStmt::Return{result: Some(result)}),
+    "RETURN"                      => Box::new(ast::LineStmt::Return{result: None}),
     "EXIT"                        => Box::new(ast::LineStmt::Exit),
     CallExp                       => Box::new(ast::LineStmt::Call(<>)),
 }
 
 pub Exp: Box<ast::Exp> = {
-    #[precedence(level="1")]
-    Term,
+    // #[precedence(level="2")] #[assoc(side="right")]
+    <lhs:Term> "EQUALS" <rhs:Exp> => Box::new(
+        ast::Exp::BinaryExp(Box::new(ast::BinaryExp::Equals{
+            lhs,
+            rhs
+        }))
+    ),
 
-    #[precedence(level="2")] #[assoc(side="right")]
+    <lhs:Term> "NOTEQUALS" <rhs:Exp> => Box::new(
+        ast::Exp::BinaryExp(Box::new(ast::BinaryExp::NotEquals{
+            lhs,
+            rhs
+        }))
+    ),
+
+    <lhs:Term> "GREATER" <rhs:Exp> => Box::new(
+        ast::Exp::BinaryExp(Box::new(ast::BinaryExp::Greater{
+            lhs,
+            rhs
+        }))
+    ),
+
+    <lhs:Term> "GREATEREQ" <rhs:Exp> => Box::new(
+        ast::Exp::BinaryExp(Box::new(ast::BinaryExp::GreaterEq{
+            lhs,
+            rhs
+        }))
+    ),
+
+    <lhs:Term> "LESS" <rhs:Exp> => Box::new(
+        ast::Exp::BinaryExp(Box::new(ast::BinaryExp::Less{
+            lhs,
+            rhs
+        }))
+    ),
+
+    <lhs:Term> "LESSEQ" <rhs:Exp> => Box::new(
+        ast::Exp::BinaryExp(Box::new(ast::BinaryExp::LessEq{
+            lhs,
+            rhs
+        }))
+    ),
+
+    // #[precedence(level="1")]
+    BabyExp,
+};
+
+pub BabyExp: Box<ast::Exp> = {
+    <lhs:Term> "DASH" <rhs:Exp> => Box::new(
+        ast::Exp::BinaryExp(Box::new(ast::BinaryExp::Minus{
+            lhs,
+            rhs
+        }))
+    ), 
+
+    <lhs:Term> "CROSS" <rhs:Exp> => Box::new(
+        ast::Exp::BinaryExp(Box::new(ast::BinaryExp::Plus{
+            lhs,
+            rhs
+        }))
+    ),
+
     <lhs:Term> "STAR" <rhs:Exp> => Box::new(
         ast::Exp::BinaryExp(Box::new(ast::BinaryExp::Times{
             lhs,
@@ -205,37 +262,33 @@ pub Exp: Box<ast::Exp> = {
             lhs,
             rhs
         }))
-    ),
+    ), 
 
-    #[precedence(level="3")]
-    <lhs:Term> "CROSS" <rhs:Exp> => Box::new(
-        ast::Exp::BinaryExp(Box::new(ast::BinaryExp::Plus{
-            lhs,
-            rhs
-        }))
-    ),
-
-    <lhs:Term> "DASH" <rhs:Exp> => Box::new(
-        ast::Exp::BinaryExp(Box::new(ast::BinaryExp::Minus{
+    <lhs:Term> "OR" <rhs:Exp> => Box::new(
+        ast::Exp::BinaryExp(Box::new(ast::BinaryExp::Or{
             lhs,
             rhs
         }))
     ), 
-    // Term "OR" Exp => Box::new(ast::Exp::BinaryExp(<>)),
-    // Term "EQUALS" Exp => Box::new(ast::Exp::BinaryExp(<>)),
-    // Term "NOTEQUALS" Exp => Box::new(ast::Exp::BinaryExp(<>)),
-    // Term "GREATER" Exp => Box::new(ast::Exp::BinaryExp(<>)),
-    // Term "GREATEREQ" Exp => Box::new(ast::Exp::BinaryExp(<>)),
-    // Term "LESS" Exp => Box::new(ast::Exp::BinaryExp(<>)),
-    // Term "LESSEQ" Exp => Box::new(ast::Exp::BinaryExp(<>)),
-    // "NOT" Exp => Box::new(ast::Exp::UnaryExp(<>)), //may need to fix to Exp
-    // "DASH" Term => Box::new(ast::Exp::UnaryExp(<>)),
+
+    "NOT" <exp:Exp> => Box::new(
+        ast::Exp::UnaryExp(Box::new(ast::UnaryExp::Not{
+            exp
+        }))
+    ), 
+
+    "DASH" <exp:Exp> => Box::new(
+        ast::Exp::UnaryExp(Box::new(ast::UnaryExp::Neg{
+            exp
+        }))
+    ), 
     
+    Term,
 };
 
 pub CallExp: Box<ast::CallExp> = {
     <name:Loc> "LPAREN" <args:ActualsList> "RPAREN" => Box::new(
-        ast::CallExp::Fn{
+        ast::CallExp {
             name,
             args: args
         }
@@ -261,16 +314,10 @@ pub Term: Box<ast::Exp> = {
 //loc
 pub Loc: Box<ast::Loc> = {
     Id => Box::new(ast::Loc::Id(<>)),
-
-    <base_class:Loc> "POSTDEC" <field_name:"ID"> => Box::new(
-        ast::Loc::MemberFieldExp{
-            base_class, 
-            field_name
-        }
-    ),
+    <base_class:Loc> "POSTDEC" <field_name:Id> => Box::new(ast::Loc::MemberFieldExp{base_class, field_name}),
 };
 
 //loc
 pub Id: Box<ast::Id> = {
-    <name:"ID"> => Box::new(ast::Id::Name(name))
+    <name:"ID"> => Box::new(ast::Id{name})
 };

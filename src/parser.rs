@@ -1,16 +1,52 @@
-#![allow(non_camel_case_types)]
 #![allow(dead_code)]
 
+mod ast;
+use crate::parser::ast::Program;
+
 use lalrpop_util::lalrpop_mod;
-pub mod ast;
-pub mod lexer;
 lalrpop_mod!(pub grammar, "/parser/grammar.rs");
 
 
+pub fn unparse(prog: Box<Program>) -> String {
+    let input = format!("{:?}", prog);
+    let text = input.lines();
+    let mut output : String = "".to_string();
+    let mut tabs = 0;
+
+    for mut line in text {
+        line = line.trim();
+        let first_char = &line.chars().next();
+        let last_char = &line.chars().last();
+
+        match first_char {
+            Some(x) => match x {
+                '}' => {if tabs > 0 { tabs -= 1; }},
+                _    => ()
+            },
+            None => (),
+        }
+        
+
+        output.push_str(&"    ".repeat(tabs));
+
+        match last_char {
+            Some(x) => match x {
+                '{' => tabs += 1,
+                _    => ()
+            },
+            None => (),
+        }
+
+        output.push_str(&line);
+        output.push_str("\n");
+    }
+    output
+}
+
 #[cfg(test)]
 mod tests {
-    use super::lexer::Lexer;
     use super::grammar::*;
+    use crate::scanner::lexer::Lexer;
 
     pub enum ParserType {
         Program,
@@ -26,12 +62,12 @@ mod tests {
 
         FnDecl,
 
-        FormalList,
+        FormalsList,
         FormalDecl,
 
         StmtList,
         BlockStmt,
-        Stmt,
+        LineStmt,
 
         Exp,
         ActualsList,
@@ -64,23 +100,23 @@ mod tests {
                 ParserType::VarDecl  => VarDeclParser::new() .parse(Lexer::new(t)).is_ok(),
                 ParserType::FnDecl   => FnDeclParser::new() .parse(Lexer::new(t)).is_ok(),
                 ParserType::ClassDecl  => ClassDeclParser::new() .parse(Lexer::new(t)).is_ok(),
+                ParserType::ClassBody  => ClassBodyParser::new() .parse(Lexer::new(t)).is_ok(),
 
                 ParserType::Type  => TypeParser::new() .parse(Lexer::new(t)).is_ok(),
                 ParserType::PrimType  => PrimTypeParser::new() .parse(Lexer::new(t)).is_ok(),
-                
 
-                ParserType::FormalList  => FormalsListParser::new() .parse(Lexer::new(t)).is_ok(),
+                ParserType::FormalsList  => FormalsListParser::new() .parse(Lexer::new(t)).is_ok(),
                 ParserType::FormalDecl  => FormalDeclParser::new() .parse(Lexer::new(t)).is_ok(),
                 
                 ParserType::StmtList  => StmtListParser::new() .parse(Lexer::new(t)).is_ok(),
-                ParserType::Stmt  => StmtParser::new() .parse(Lexer::new(t)).is_ok(),
+                ParserType::BlockStmt  => BlockStmtParser::new() .parse(Lexer::new(t)).is_ok(),
+                ParserType::LineStmt  => LineStmtParser::new() .parse(Lexer::new(t)).is_ok(),
                 ParserType::CallExp  => CallExpParser::new() .parse(Lexer::new(t)).is_ok(),
                 ParserType::Exp  => ExpParser::new() .parse(Lexer::new(t)).is_ok(),
                 ParserType::ActualsList  => ActualsListParser::new() .parse(Lexer::new(t)).is_ok(),
                 ParserType::Term => TermParser::new().parse(Lexer::new(t)).is_ok(),
                 ParserType::Loc  => LocParser::new() .parse(Lexer::new(t)).is_ok(),
                 ParserType::Id   => IdParser::new()  .parse(Lexer::new(t)).is_ok(),
-                _ => false
             };
             
             let err_string : String;
@@ -120,7 +156,81 @@ mod tests {
             };",
         ];
         
+        let _test = "a(b, c, d)";
 
+        let test_suite = r#"
+        a : int ;
+        b : bool ;
+        c : void ;
+        d : perfect void ;
+        e : f ;
+        g : perfect h ;
+        //i : perfect j = true == true != true;
+        //i : perfect j = true - true + true * true / true and true or true == true != true < true <= true > true >= true ;
+        k : perfect l = true - true ;
+        m : perfect n = true + true ;
+        o : perfect p = true * true ;
+        q : perfect r = true / true ;
+        s : perfect t = true and true ;
+        u : perfect v = true or true ;
+        w : perfect x = true == true ;
+        y : perfect z = true != true ;
+        a : perfect b = true < true ;
+        c : perfect d = true <= true ;
+        e : perfect f = true > true ;
+        g : perfect h = true >= true ;
+        i : perfect j = ! true ;
+        k : perfect l = - true ;
+        m : perfect n = true ;
+        o : perfect p = q ;
+        r : perfect s = t -- u ;
+        v : perfect w = 7 ;
+        x : perfect y = "seven" ;
+        x : perfect y = "sdsd{sev" ;
+        x : perfect y = "sdsd}sdsd" ;
+        x : perfect y = "se24rwwfa3a9u09u 0 jh9fps-ic[n" ;
+        z : perfect a = true ;
+        b : perfect c = false ;
+        d : perfect e = magic ;
+        f : perfect g = ( true ) ;
+        h : perfect i = j ( ) ;
+        
+        k : class { l : int ; l : int ; l : int ; } ;
+        //m : class { n : (  ) int {  } ; } ;
+        o : class {  } ;
+        
+        
+        p : (  ) int { return ; return ; }
+        q : (  ) int { if ( true ) {  } if ( true ) { return; } return; }
+        r : (  ) int { if ( true ) {  } return ; }
+        
+        s : (  ) int { t : int ; }
+        u : (  ) int { v = true ; }
+        w : (  ) int { x -- ; }
+        y : (  ) int { z ++ ; }
+        a : (  ) int { give true ; }
+        b : (  ) int { take c ; }
+        d : (  ) int { return true ; }
+        e : (  ) int { return ; }
+        f : (  ) int { today I don't feel like doing any work ; }
+        
+        g : (  ) int { h ( ) ; }
+        i : (  ) int { j ( true ) ; }
+        k : (  ) int { l ( true , true ) ; }
+        
+        m : (  ) int { while ( true ) {  } }
+        n : (  ) int { if ( true ) {  } }
+        o : (  ) int { if ( true ) {  } else {  } }
+        p : (  ) int {  }
+        q : ( r : int ) int {  }
+        s : ( t : int , u : int ) int {  }
+        "#;
+
+        // println!("{test_suite}");
+        
+        println!("{:?}",ProgramParser::new().parse(Lexer::new(test_suite)));
+        // println!("{}",unparse(test_suite));
+        // println!("{:?}",ProgramParser::new().parse(Lexer::new("s : (  ) int { t : int ;}")));
         test_inputs(program_good, Some(program_bad), &ParserType::Program);
     }
 
@@ -220,7 +330,7 @@ mod tests {
             "",
         ];
         
-        test_inputs(fd_good, None, &ParserType::FormalList);
+        test_inputs(fd_good, None, &ParserType::FormalsList);
     }
 
     #[test]
@@ -249,27 +359,30 @@ mod tests {
     }
 
     #[test]
-    fn parse_stmt() {
+    fn parse_line_stmt() {
         let stmt_good = vec![
             "a--a = magic",
             "a--b--c--d--e = magic",
             "a--",
             "a++",
-            "give magic;",
-            "take a;",
-            "take meow_on;",
-            "return true;",
-            "return;",
-            "today I don't feel like doing any work;",
-            "abc();",
-            "owo(uwu);",
+            "give magic",
+            "take a",
+            "take meow_on",
+            "return true",
+            "return",
+            "today I don't feel like doing any work",
+            "abc()",
+            "owo(uwu)",
         ];
 
         let stmt_bad = vec![
             "take a-b",
             "abc--abc a--c",
         ];
-        test_inputs(stmt_good, Some(stmt_bad), &ParserType::Stmt);
+
+
+        // println!("{:?}", LineStmtParser::new().parse(Lexer::new("a--a = magic")));
+        test_inputs(stmt_good, Some(stmt_bad), &ParserType::LineStmt);
     }
 
     #[test]
@@ -291,12 +404,12 @@ mod tests {
             "abc < abc",
             "abc <= abc",
             "abc",
+            "a-b-c-d-e-f",
         ];
 
         let exp_bad = vec![
             "abc abc",
         ];
-
         test_inputs(exp_good, Some(exp_bad), &ParserType::Exp);
     }
 
@@ -349,7 +462,6 @@ mod tests {
             "a (a-b)",
             "(!!too hot)",
             "(a-b)",
-            "a-b-c-d-e-f",
         ];
 
         let terms_bad = vec![

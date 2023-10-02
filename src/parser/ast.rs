@@ -1,43 +1,47 @@
-#[derive(Clone, Debug, PartialEq)]
+mod format;
+
+#[derive(Clone, PartialEq)]
 pub struct Program {
     pub globals: Vec<Box<Decl>>
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum Decl {
     VarDecl(Box<VarDecl>),
     ClassDecl(Box<ClassDecl>),
     FnDecl(Box<FnDecl>),
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum VarDecl {
-    VarDecl { var_type: Box<Type>, id: Box<Id>, init_val: Option<Box<Exp>> },
+#[derive(Clone, PartialEq)]
+pub struct VarDecl {
+    pub var_type: Box<Type>, 
+    pub id: Box<Id>, 
+    pub init_val: Option<Box<Exp>>
 }
 
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum Type {
     Prim(PrimType),
     Class(Box<Id>),
     PerfectPrim(PrimType),
-    PerfectClass(String),
+    PerfectClass(Box<Id>),
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum PrimType {
     Bool,
     Int,
     Void,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct ClassDecl {
     pub id: Box<Id>, 
     pub member_f: Box<Vec<Box<Decl>>>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct FnDecl {
     pub id: Box<Id>, 
     pub args: Vec<Box<FormalDecl>>, 
@@ -45,7 +49,7 @@ pub struct FnDecl {
     pub body: Vec<Box<Stmt>>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum FormalDecl {
     VarDecl(VarDecl),
     FormalDecl{
@@ -54,36 +58,33 @@ pub enum FormalDecl {
     },
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum Stmt {
     Block(Box<BlockStmt>),
     Line(Box<LineStmt>),
+    VarDecl(Box<VarDecl>),
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum BlockStmt {
     While  {cond: Box<Exp>, body: Vec<Box<Stmt>> },
     If     {cond: Box<Exp>, body: Vec<Box<Stmt>> } ,
     IfElse {cond: Box<Exp>, true_branch: Vec<Box<Stmt>>, false_branch: Vec<Box<Stmt>> },
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum LineStmt {
-    // declarations
-    Decl(Box<Decl>),
-
-    // keyword centric
     Assign { dest: Box<Loc>, src: Box<Exp> },
-    PostDec(Box<Loc>),
-    PostInc(Box<Loc>),
-    Give(Box<Exp>),
-    Take(Box<Loc>),
-    Return(Option<Box<Exp>>),
+    PostDec{ loc: Box<Loc>},
+    PostInc{ loc: Box<Loc>},
+    Give   { output: Box<Exp>},
+    Take   { recipient: Box<Loc>},
+    Return { result: Option<Box<Exp>>},
     Exit,
     Call(Box<CallExp>),
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum Exp {
     True,
     False,
@@ -96,13 +97,13 @@ pub enum Exp {
     Loc(Box<Loc>),
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum UnaryExp {
     Neg { exp: Box<Exp>},
     Not { exp: Box<Exp>},
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum BinaryExp {
     And       { lhs: Box<Exp>, rhs: Box<Exp>},
     Or        { lhs: Box<Exp>, rhs: Box<Exp>},
@@ -118,18 +119,19 @@ pub enum BinaryExp {
     Divide    { lhs: Box<Exp>, rhs: Box<Exp>},
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum CallExp {
-    Fn {name: Box<Loc>, args: Vec<Box<Exp>>}
+#[derive(Clone, PartialEq)]
+pub struct CallExp {
+    pub name: Box<Loc>, 
+    pub args: Vec<Box<Exp>>
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum Loc {
     Id(Box<Id>),
-    MemberFieldExp { base_class: Box<Loc>, field_name: String }
+    MemberFieldExp { base_class: Box<Loc>, field_name: Box<Id> }
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum Id {
-    Name(String)
+#[derive(Clone, PartialEq)]
+pub struct Id {
+    pub name: String
 }
