@@ -2,6 +2,7 @@ use std::io::{self, Write};
 use logos::Logos;
 use crate::scanner::tokens::TokenType;
 pub mod tokens;
+pub mod lexer;
 
 
 #[cfg(test)]

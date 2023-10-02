@@ -1,7 +1,6 @@
 use logos::{Logos, SpannedIter};
-use crate::scanner::tokens::{TokenType, LexingError};
+use super::tokens::{TokenType, LexingError};
 
-//#[derive(Debug)]
 pub struct Lexer<'input> {
     token_stream: SpannedIter<'input, TokenType>,
 }

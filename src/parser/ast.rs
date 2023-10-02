@@ -1,182 +1,137 @@
-use crate::scanner::tokens::TokenType;
+mod format;
 
-//AST program
-#[derive(Clone, Debug, PartialEq)]
-pub enum Program {
-    Program(Box<Globals>),
+#[derive(Clone, PartialEq)]
+pub struct Program {
+    pub globals: Vec<Box<Decl>>
 }
 
-
-//AST globals
-#[derive(Clone, Debug, PartialEq)]
-pub enum Globals {
-    Globals_Decl(Box<Globals>, Box<Decl>),
-    Globals_Epsilon(),
-}
-
-
-//AST decl
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum Decl {
-    Decl_VarDecl(Box<VarDecl>, TokenType),
-    Decl_ClassDecl(Box<ClassDecl>),
-    Decl_FnDecl(Box<FnDecl>),
+    VarDecl(Box<VarDecl>),
+    ClassDecl(Box<ClassDecl>),
+    FnDecl(Box<FnDecl>),
 }
 
-//AST varDecl
-#[derive(Clone, Debug, PartialEq)]
-pub enum VarDecl {
-    VarDecl_Colon(Box<Id>, TokenType, Box<Type>),
-    VarDecl_ColonAssign(Box<Id>, TokenType, Box<Type>, TokenType, Box<Exp>),
+#[derive(Clone, PartialEq)]
+pub struct VarDecl {
+    pub var_type: Box<Type>, 
+    pub id: Box<Id>, 
+    pub init_val: Option<Box<Exp>>
 }
 
 
-//AST type
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum Type {
-    Type_PrimType(Box<PrimType>),
-    Type_PerfectPrimType(TokenType, Box<PrimType>),
-    Type_Id(Box<Id>),
-    Type_PerfectId(TokenType, Box<Id>),
+    Prim(PrimType),
+    Class(Box<Id>),
+    PerfectPrim(PrimType),
+    PerfectClass(Box<Id>),
 }
 
-//AST primType
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum PrimType {
-    PrimType_Int(TokenType),
-    PrimType_Bool(TokenType),
-    PrimType_Void(TokenType),
+    Bool,
+    Int,
+    Void,
 }
 
-//AST classDecl
-#[derive(Clone, Debug, PartialEq)]
-pub enum ClassDecl {
-    ClassDecl(Box<Id>, TokenType, TokenType, TokenType, Box<ClassBody>, TokenType, TokenType),
+#[derive(Clone, PartialEq)]
+pub struct ClassDecl {
+    pub id: Box<Id>, 
+    pub member_f: Box<Vec<Box<Decl>>>,
 }
 
-//AST classBody
-#[derive(Clone, Debug, PartialEq)]
-pub enum ClassBody {
-    ClassBody_VarDecl(Box<ClassBody>, Box<VarDecl>, TokenType),
-    ClassBody_FnDecl(Box<ClassBody>, Box<FnDecl>, TokenType),
-    ClassBody_Epsilon(),
+#[derive(Clone, PartialEq)]
+pub struct FnDecl {
+    pub id: Box<Id>, 
+    pub args: Vec<Box<FormalDecl>>, 
+    pub ret: Box<Type>, 
+    pub body: Vec<Box<Stmt>>,
 }
 
-//AST fnDecl
-#[derive(Clone, Debug, PartialEq)]
-pub enum FnDecl {
-    FnDecl_Formals(Box<Id>, TokenType, TokenType, Box<Formals>, TokenType, Box<Type>, TokenType, Box<StmtList>, TokenType),
-    //fnDecl(Box<Id>, TokenType, TokenType, TokenType, Box<Type>, TokenType, Box<StmtList>, TokenType),
-}
-
-//AST formals
-#[derive(Clone, Debug, PartialEq)]
-pub enum Formals {
-    Formals_FormalsList(Box<FormalsList>),
-    Formals_Epsilon(),
-}
-
-//AST formalsList
-#[derive(Clone, Debug, PartialEq)]
-pub enum FormalsList {
-    FormalsList_FormalDecl(Box<FormalDecl>),
-    FormalsList(Box<FormalsList>, TokenType, Box<FormalDecl>),
-}
-
-//AST formalDecl 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum FormalDecl {
-    FormalDecl(Box<Id>, TokenType, Box<Type>),
+    VarDecl(VarDecl),
+    FormalDecl{
+        id: Box<Id>, 
+        formal_type: Box<Type>,
+    },
 }
 
-//AST stmtList
-#[derive(Clone, Debug, PartialEq)]
-pub enum StmtList {
-    StmtList_StmtList(Box<StmtList>, Box<Stmt>, TokenType),
-    StmtList_BlockStmt(Box<StmtList>, Box<BlockStmt>),
-    StmtList_Epsilon(),
-}
-
-
-//AST blockStmt
-#[derive(Clone, Debug, PartialEq)]
-pub enum BlockStmt {
-    BlockStmt_While(TokenType, TokenType, Box<Exp>, TokenType, TokenType, Box<StmtList>, TokenType),
-    BlockStmt_If(TokenType, TokenType, Box<Exp>, TokenType, TokenType, Box<StmtList>, TokenType),
-    BlockStmt_IfElse(TokenType, TokenType, Box<Exp>, TokenType, TokenType, Box<StmtList>, TokenType, TokenType, TokenType, Box<StmtList>, TokenType),
-}
-//AST stmt
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum Stmt {
-    Stmt_VarDecl(Box<VarDecl>),
-    Stmt_Assign(Box<Loc>, TokenType, Box<Exp>),
-    Stmt_PostDec(Box<Loc>, TokenType),
-    Stmt_PostInc(Box<Loc>, TokenType),
-    Stmt_Give(TokenType, Box<Exp>),
-    Stmt_Take(TokenType, Box<Loc>),
-    Stmt_ReturnExp(TokenType, Box<Exp>),
-    Stmt_Return(TokenType),
-    Stmt_Exit(TokenType),
-    Stmt_CallExp(Box<CallExp>),
+    Block(Box<BlockStmt>),
+    Line(Box<LineStmt>),
+    VarDecl(Box<VarDecl>),
 }
 
-//AST exp
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
+pub enum BlockStmt {
+    While  {cond: Box<Exp>, body: Vec<Box<Stmt>> },
+    If     {cond: Box<Exp>, body: Vec<Box<Stmt>> } ,
+    IfElse {cond: Box<Exp>, true_branch: Vec<Box<Stmt>>, false_branch: Vec<Box<Stmt>> },
+}
+
+#[derive(Clone, PartialEq)]
+pub enum LineStmt {
+    Assign { dest: Box<Loc>, src: Box<Exp> },
+    PostDec{ loc: Box<Loc>},
+    PostInc{ loc: Box<Loc>},
+    Give   { output: Box<Exp>},
+    Take   { recipient: Box<Loc>},
+    Return { result: Option<Box<Exp>>},
+    Exit,
+    Call(Box<CallExp>),
+}
+
+#[derive(Clone, PartialEq)]
 pub enum Exp {
-    Exp_Dash(Box<Term>, TokenType, Box<Exp>),
-    Exp_Cross(Box<Term>, TokenType, Box<Exp>),
-    Exp_Star(Box<Term>, TokenType, Box<Exp>),
-    Exp_Slash(Box<Term>, TokenType, Box<Exp>),
-    Exp_And(Box<Term>, TokenType, Box<Exp>),
-    Exp_Or(Box<Term>, TokenType, Box<Exp>),
-    Exp_Equals(Box<Term>, TokenType, Box<Exp>),
-    Exp_NotEquals(Box<Term>, TokenType, Box<Exp>),
-    Exp_Greater(Box<Term>, TokenType, Box<Exp>),
-    Exp_GreaterEq(Box<Term>, TokenType, Box<Exp>),
-    Exp_Less(Box<Term>, TokenType, Box<Exp>),
-    Exp_LessEq(Box<Term>, TokenType, Box<Exp>),
-    Exp_Not(TokenType, Box<Exp>),
-    Exp_DashTerm(TokenType, Box<Term>),
-    Exp_Term(Box<Term>),
+    True,
+    False,
+    Magic,
+    UnaryExp(Box<UnaryExp>),
+    BinaryExp(Box<BinaryExp>),
+    CallExp(Box<CallExp>),
+    IntLit(i32),
+    StrLit(String),
+    Loc(Box<Loc>),
 }
 
-//AST callExp
-#[derive(Clone, Debug, PartialEq)]
-pub enum CallExp {
-    CallExp_Fn(Box<Id>, TokenType, TokenType),
-    CallExp_FnArgs(Box<Id>, TokenType, Box<ActualsList>, TokenType),
+#[derive(Clone, PartialEq)]
+pub enum UnaryExp {
+    Neg { exp: Box<Exp>},
+    Not { exp: Box<Exp>},
 }
 
-//AST actualsList
-#[derive(Clone, Debug, PartialEq)]
-pub enum ActualsList {
-    ActualsList_Exp(Box<Exp>),
-    ActualsList_ActualsList(Box<ActualsList>, TokenType, Box<Exp>),
+#[derive(Clone, PartialEq)]
+pub enum BinaryExp {
+    And       { lhs: Box<Exp>, rhs: Box<Exp>},
+    Or        { lhs: Box<Exp>, rhs: Box<Exp>},
+    Equals    { lhs: Box<Exp>, rhs: Box<Exp>},
+    NotEquals { lhs: Box<Exp>, rhs: Box<Exp>},
+    Greater   { lhs: Box<Exp>, rhs: Box<Exp>},
+    Less      { lhs: Box<Exp>, rhs: Box<Exp>},
+    GreaterEq { lhs: Box<Exp>, rhs: Box<Exp>},
+    LessEq    { lhs: Box<Exp>, rhs: Box<Exp>},
+    Plus      { lhs: Box<Exp>, rhs: Box<Exp>},
+    Minus     { lhs: Box<Exp>, rhs: Box<Exp>},
+    Times     { lhs: Box<Exp>, rhs: Box<Exp>},
+    Divide    { lhs: Box<Exp>, rhs: Box<Exp>},
 }
 
-//AST term
-#[derive(Clone, Debug, PartialEq)]
-pub enum Term {
-    Term_Loc(Box<Loc>),
-    Term_IntLiteral(i32),
-    Term_StringLiteral(String),
-    Term_True(TokenType),
-    Term_False(TokenType),
-    Term_Magic(TokenType),
-    Term_Paren(TokenType, Box<Exp>, TokenType),
-    Term_CallExp(Box<CallExp>),
+#[derive(Clone, PartialEq)]
+pub struct CallExp {
+    pub name: Box<Loc>, 
+    pub args: Vec<Box<Exp>>
 }
 
-//AST loc
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum Loc {
-    Loc_Id(Box<Id>),
-    Loc_PostDec(Box<Loc>, TokenType, Box<Id>),
+    Id(Box<Id>),
+    MemberFieldExp { base_class: Box<Loc>, field_name: Box<Id> }
 }
 
-
-//AST id
-#[derive(Clone, Debug, PartialEq)]
-pub enum Id {
-    Id(String),
+#[derive(Clone, PartialEq)]
+pub struct Id {
+    pub name: String
 }
