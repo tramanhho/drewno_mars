@@ -6,7 +6,7 @@ mod scanner;
 use scanner::{tokenizer, lexer::Lexer};
 
 mod parser;
-use parser::{unparse, grammar::*};
+use parser::{unparse, named_unparse, grammar::*};
 
 pub struct Config {
     input: String,
@@ -14,10 +14,11 @@ pub struct Config {
     mode: ProcessMode
 }
 
-pub enum ProcessMode {
+enum ProcessMode {
     Tokenize,
     ParseCheck,
-    ParsePrint
+    Unparse,
+    NamedUnparse,
 }
 
 
@@ -42,18 +43,20 @@ impl Config {
                 mode = match arg_str {
                     "-t" => Some(ProcessMode::Tokenize),
                     "-p" => Some(ProcessMode::ParseCheck),
-                    "-u" => Some(ProcessMode::ParsePrint),
+                    "-u" => Some(ProcessMode::Unparse),
+                    "-n" => Some(ProcessMode::NamedUnparse),
                     _ => return Err(
                         "The only supported options right now are:\n  
                         [-t <inputFile.dm> <outputFile> ]: Tokenizes inputFile and outputs result into <outputFile>.\n  
                         [-p <inputFile.dm> ]: Checks if inputFile has syntactically correct Drewno Mars code.\n
                         [-u <inputFile.dm> <outputFile> ]: Converts inputFile into canonical Drewno Mars code and outputs result into <outputFile>.\n
+                        [-n <inputFile.dm> <outputFile> ]: Converts inputFile into canonical Drewno Mars code with typing and outputs result into <outputFile>.\n
                         Try again with a supported option.\n
                         Note: all <outputFile> arguments are optional. If no <outputFile> is given, output will be printed to console.")
                 };
 
                 output_file = match arg_str {
-                    "-t" | "-u" => {
+                    "-t" | "-u" | "-n" => {
                         match args.next() {
                             Some(x) => Some(x),
                             None => None
@@ -112,12 +115,24 @@ pub fn run(config: Config) {
                 Err(_) => { eprintln!("syntax error\nParse failed"); },
             };
         },
-        ProcessMode::ParsePrint => {
+        ProcessMode::Unparse => {
             let lexer = Lexer::new(&input[..]);
             let mut output = config.output;
             match ProgramParser::new().parse(lexer) {
                 Ok(x) => output
                 .write_all(unparse(x).as_bytes())
+                .expect("Error writing to output file."),
+
+                Err(x) => { eprintln!("Parse failed: {:?}", x); },
+            };
+        },
+
+        ProcessMode::NamedUnparse => {
+            let lexer = Lexer::new(&input[..]);
+            let mut output = config.output;
+            match ProgramParser::new().parse(lexer) {
+                Ok(x) => output
+                .write_all(named_unparse(x).unwrap().as_bytes())
                 .expect("Error writing to output file."),
 
                 Err(x) => { eprintln!("Parse failed: {:?}", x); },

@@ -4,24 +4,6 @@ use crate::scanner::tokens::TokenType;
 pub mod tokens;
 pub mod lexer;
 
-
-#[cfg(test)]
-mod tests {
-    use logos::Logos;
-    use crate::scanner::tokens::TokenType;
-
-    #[test]
-    fn lex() {
-        let lex = TokenType::lexer(
-            r#"2147483647 2147483648 Jérome "nice" " owo \g owo " "#
-        );
-
-        for token in lex {
-            println!("{:?}", token);
-        }
-    }
-}
-
 pub fn tokenizer(input: Vec<&str>, mut tokens: Box<dyn Write>) {
     let mut scanner = Scanner::new();
 
