@@ -44,7 +44,6 @@ pub fn unparse(prog: Box<Program>) -> String {
 }
 
 pub fn named_unparse(prog: Box<Program>) -> Result<String, &'static str> {
-
     let mut symbol_table: HashMap<String, Symbol> = HashMap::new();
 
     Ok("".to_string())
@@ -59,7 +58,13 @@ pub enum ASTNode {
 
 struct Symbol {
     sym_type: Type,
-    // init_val: Option<T>
+    init_val: Option<VariableValue>
+}
+
+enum VariableValue {
+    Int(i32),
+    Bool(bool),
+    Text(String),
 }
 
 // gameplan: 

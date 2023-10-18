@@ -27,7 +27,7 @@ impl Debug for ast::Decl {
             VarDecl(ref x) => write!(fmt, "{:?}", x),
             ClassDecl(ref x) => write!(fmt, "{:?}", x),
             FnDecl(ref x) => write!(fmt, "{:?}", x),
-        }   
+        }
     }
 }
 

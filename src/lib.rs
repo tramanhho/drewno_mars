@@ -8,6 +8,8 @@ use scanner::{tokenizer, lexer::Lexer};
 mod parser;
 use parser::{unparse, named_unparse, grammar::*};
 
+use indoc::indoc;
+
 pub struct Config {
     input: String,
     output: Box<dyn Write>,
@@ -23,13 +25,13 @@ enum ProcessMode {
 
 
 impl Config {
-    pub fn build(
+    pub fn build<'a>(
         mut args: impl Iterator<Item = String>,
     ) -> Result<Config, &'static str> {
         let mut mode = None;
         let mut input = None;
         let mut output_file = None;
-
+        
         args.next();
 
         loop {
@@ -37,7 +39,6 @@ impl Config {
                 Some(x) => x,
                 None => break,
             };
-
             if arg.starts_with("-") {
                 let arg_str = arg.as_str();
                 mode = match arg_str {
@@ -45,14 +46,17 @@ impl Config {
                     "-p" => Some(ProcessMode::ParseCheck),
                     "-u" => Some(ProcessMode::Unparse),
                     "-n" => Some(ProcessMode::NamedUnparse),
-                    _ => return Err(
-                        "The only supported options right now are:\n  
-                        [-t <inputFile.dm> <outputFile> ]: Tokenizes inputFile and outputs result into <outputFile>.\n  
-                        [-p <inputFile.dm> ]: Checks if inputFile has syntactically correct Drewno Mars code.\n
-                        [-u <inputFile.dm> <outputFile> ]: Converts inputFile into canonical Drewno Mars code and outputs result into <outputFile>.\n
-                        [-n <inputFile.dm> <outputFile> ]: Converts inputFile into canonical Drewno Mars code with typing and outputs result into <outputFile>.\n
-                        Try again with a supported option.\n
-                        Note: all <outputFile> arguments are optional. If no <outputFile> is given, output will be printed to console.")
+                    _ => return Err(indoc!{"
+                        The only supported options right now are:
+                            [<inputFile.dm> -t <outputFile> ]: Tokenizes inputFile and outputs result into <outputFile>.
+                            [<inputFile.dm> -p]: Checks if inputFile has syntactically correct Drewno Mars code.
+                            [<inputFile.dm> <outputFile> -u]: Converts inputFile into canonical Drewno Mars code and outputs result into <outputFile>.
+                            [<inputFile.dm> <outputFile> -n]: Converts inputFile into canonical Drewno Mars code with types and outputs result into <outputFile>.
+                        
+                        Try again with a supported option.
+
+                        Note: all <outputFile> arguments are optional. If no <outputFile> is given, output will be printed to console.
+                    "})
                 };
 
                 output_file = match arg_str {
@@ -134,7 +138,7 @@ pub fn run(config: Config) {
                 Ok(x) => output
                 .write_all(named_unparse(x).unwrap().as_bytes())
                 .expect("Error writing to output file."),
-
+                
                 Err(x) => { eprintln!("Parse failed: {:?}", x); },
             };
         },

@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 lalrpop-util = { version = "0.20.0", features = ["lexer", "unicode"] }
 logos = "0.13.0"
+indoc = "2"
 
 [build-dependencies]
 lalrpop = "0.20.0"
@@ -15,6 +16,6 @@ lalrpop = "0.20.0"
 # [build]
 # profiler = true
 
-[dev-dependencies]
-assert_cmd = "2.0.12"
-predicates = "3.0.4"
+# [dev-dependencies]
+# assert_cmd = "2.0.12"
+# predicates = "3.0.4"
