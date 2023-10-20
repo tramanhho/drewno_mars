@@ -1,0 +1,9 @@
+decl1{int} : int = 1;
+decl2fn{(int, bool)->void} : (a{int} : int, b{bool} : bool) void  {
+    decl2{int} : int = 2;
+}
+decl3{int} : int;
+decl3fn{()->void} : () void  {
+    decl3{int} = 3;
+    decl2fn{(int, bool)->void}(3, true);
+}

@@ -48,10 +48,10 @@ impl Config {
                     "-n" => Some(ProcessMode::NamedUnparse),
                     _ => return Err(indoc!{"
                         The only supported options right now are:
-                            [<inputFile.dm> -t <outputFile> ]: Tokenizes inputFile and outputs result into <outputFile>.
+                            [<inputFile.dm> -t <outputFile> ]: Tokenizes inputFile. Outputs result into <outputFile>.
                             [<inputFile.dm> -p]: Checks if inputFile has syntactically correct Drewno Mars code.
-                            [<inputFile.dm> <outputFile> -u]: Converts inputFile into canonical Drewno Mars code and outputs result into <outputFile>.
-                            [<inputFile.dm> <outputFile> -n]: Converts inputFile into canonical Drewno Mars code with types and outputs result into <outputFile>.
+                            [<inputFile.dm> <outputFile> -u]: Converts inputFile into canonical Drewno Mars code. Outputs result into <outputFile>.
+                            [<inputFile.dm> <outputFile> -n]: Converts inputFile into canonical Drewno Mars code with types. Outputs result into <outputFile>.
                         
                         Try again with a supported option.
 

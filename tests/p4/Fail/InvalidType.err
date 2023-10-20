@@ -1,0 +1,7 @@
+FATAL [4,1]-[4,11]: Invalid type in declaration
+FATAL [7,19]-[7,29]: Invalid type in declaration
+FATAL [9,5]-[9,15]: Invalid type in declaration
+FATAL [10,21]-[10,31]: Undeclared identifier
+FATAL [15,1]-[15,11]: Invalid type in declaration
+FATAL [15,1]-[15,11]: Multiply declared identifier
+Name Analysis Failed

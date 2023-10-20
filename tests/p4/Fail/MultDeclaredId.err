@@ -1,0 +1,9 @@
+FATAL [5,1]-[5,6]: Multiply declared identifier
+FATAL [9,1]-[9,6]: Multiply declared identifier
+FATAL [13,1]-[13,6]: Multiply declared identifier
+FATAL [17,1]-[17,6]: Multiply declared identifier
+FATAL [21,1]-[21,6]: Multiply declared identifier
+FATAL [25,1]-[25,6]: Multiply declared identifier
+FATAL [29,1]-[29,6]: Multiply declared identifier
+Name Analysis Failed
+
