@@ -12,4 +12,4 @@ invaltype2fn2 : (  ) void {
 
 //Invalid type in declaration and Multiply declared identifier
 invaltype3 : int;
-invaltype3 : void = 1 ;
+invaltype3 : void = 1;

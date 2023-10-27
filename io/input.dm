@@ -1,12 +1,15 @@
 class1:class{
-  a:int = 12;
+  a:int;
   field:int;
   var:perfect bool;
+  main2 : () void {
+    give 12;
+  }
 };
 
 global : int;
 class2 : class {
-    field : class1;
+    field : class1; 
 };
 
 main : () void {

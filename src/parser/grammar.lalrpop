@@ -314,7 +314,7 @@ pub Term: Box<ast::Exp> = {
 //loc
 pub Loc: Box<ast::Loc> = {
     Id => Box::new(ast::Loc::Id(<>)),
-    <base_class:Loc> "POSTDEC" <field_name:Id> => Box::new(ast::Loc::MemberFieldExp{base_class, field_name}),
+    <base_class:Loc> "POSTDEC" <field_name:Id> => Box::new(ast::Loc::Loc{base_class, field_name}),
 };
 
 //loc

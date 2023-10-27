@@ -66,7 +66,7 @@ impl Display for Type {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Copy)]
 pub enum PrimType {
     Bool,
     Int,
@@ -88,6 +88,12 @@ impl Display for PrimType {
 pub struct ClassDecl {
     pub id: Box<Id>, 
     pub member_f: Box<Vec<Box<Decl>>>,
+}
+
+impl Display for ClassDecl {
+    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+        write!(fmt, "{} : class {{\n{}}};\n", &self.id, fmt_vec(&self.member_f))
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -129,11 +135,33 @@ pub enum Stmt {
     VarDecl(Box<VarDecl>),
 }
 
+impl Display for Stmt {
+    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+        use Stmt::*;
+        match self {
+            Block(ref x) => write!(fmt, "{}", x),
+            Line(ref x) => write!(fmt, "{};\n", x),
+            VarDecl(ref x) => write!(fmt, "{}", x),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum BlockStmt {
     While  {cond: Box<Exp>, body: Vec<Box<Stmt>> },
     If     {cond: Box<Exp>, body: Vec<Box<Stmt>> } ,
     IfElse {cond: Box<Exp>, true_branch: Vec<Box<Stmt>>, false_branch: Vec<Box<Stmt>> },
+}
+
+impl Display for BlockStmt {
+    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+        use BlockStmt::*;
+        match self {
+            While{cond, body} => write!(fmt, "while ({}) {{\n{}}}\n", cond, fmt_vec(body)),
+            If{cond, body} => write!(fmt, "if ({}) {{\n{}}}\n", cond, fmt_vec(body)),
+            IfElse{cond, true_branch, false_branch} => write!(fmt, "if ({}) {{\n{}}}\nelse {{\n{}}}\n", cond, fmt_vec(true_branch), fmt_vec(false_branch)),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -146,96 +174,6 @@ pub enum LineStmt {
     Return { result: Option<Box<Exp>>},
     Exit,
     Call(Box<CallExp>),
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum Exp {
-    True,
-    False,
-    Magic,
-    UnaryExp(Box<UnaryExp>),
-    BinaryExp(Box<BinaryExp>),
-    CallExp(Box<CallExp>),
-    IntLit(i32),
-    StrLit(String),
-    Loc(Box<Loc>),
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum UnaryExp {
-    Neg { exp: Box<Exp>},
-    Not { exp: Box<Exp>},
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum BinaryExp {
-    And       { lhs: Box<Exp>, rhs: Box<Exp>},
-    Or        { lhs: Box<Exp>, rhs: Box<Exp>},
-    Equals    { lhs: Box<Exp>, rhs: Box<Exp>},
-    NotEquals { lhs: Box<Exp>, rhs: Box<Exp>},
-    Greater   { lhs: Box<Exp>, rhs: Box<Exp>},
-    Less      { lhs: Box<Exp>, rhs: Box<Exp>},
-    GreaterEq { lhs: Box<Exp>, rhs: Box<Exp>},
-    LessEq    { lhs: Box<Exp>, rhs: Box<Exp>},
-    Plus      { lhs: Box<Exp>, rhs: Box<Exp>},
-    Minus     { lhs: Box<Exp>, rhs: Box<Exp>},
-    Times     { lhs: Box<Exp>, rhs: Box<Exp>},
-    Divide    { lhs: Box<Exp>, rhs: Box<Exp>},
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct CallExp {
-    pub name: Box<Loc>, 
-    pub args: Vec<Box<Exp>>
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum Loc {
-    Id(Box<Id>),
-    MemberFieldExp { base_class: Box<Loc>, field_name: Box<Id> }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct Id {
-    pub name: String
-}
-
-pub fn fmt_vec_commas<T: std::fmt::Display>(vec: &Vec<T>) -> String {
-    return vec.iter().map(|arg| format!("{}", arg)).collect::<Vec<String>>().join(", ");
-}
-
-pub fn fmt_vec<T: std::fmt::Display>(vec: &Vec<T>) -> String {
-    return vec.iter().map(|arg| format!("{}", arg)).collect::<Vec<String>>().join("");
-}
-
-
-
-
-
-
-
-
-
-impl Display for Stmt {
-    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-        use Stmt::*;
-        match self {
-            Block(ref x) => write!(fmt, "{}", x),
-            Line(ref x) => write!(fmt, "{};\n", x),
-            VarDecl(ref x) => write!(fmt, "{}", x),
-        }
-    }
-}
-
-impl Display for BlockStmt {
-    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-        use BlockStmt::*;
-        match self {
-            While{cond, body} => write!(fmt, "while ({}) {{\n{}}}\n", cond, fmt_vec(body)),
-            If{cond, body} => write!(fmt, "if ({}) {{\n{}}}\n", cond, fmt_vec(body)),
-            IfElse{cond, true_branch, false_branch} => write!(fmt, "if ({}) {{\n{}}}\nelse {{\n{}}}\n", cond, fmt_vec(true_branch), fmt_vec(false_branch)),
-        }
-    }
 }
 
 impl Display for LineStmt {
@@ -256,6 +194,19 @@ impl Display for LineStmt {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum Exp {
+    True,
+    False,
+    Magic,
+    UnaryExp(Box<UnaryExp>),
+    BinaryExp(Box<BinaryExp>),
+    CallExp(Box<CallExp>),
+    IntLit(i32),
+    StrLit(String),
+    Loc(Box<Loc>),
+}
+
 impl Display for Exp {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
         use Exp::*;
@@ -273,6 +224,12 @@ impl Display for Exp {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum UnaryExp {
+    Neg { exp: Box<Exp>},
+    Not { exp: Box<Exp>},
+}
+
 impl Display for UnaryExp {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
         use UnaryExp::*;
@@ -281,6 +238,22 @@ impl Display for UnaryExp {
             Not{exp} => write!(fmt, "!{}", exp),
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum BinaryExp {
+    And       { lhs: Box<Exp>, rhs: Box<Exp>},
+    Or        { lhs: Box<Exp>, rhs: Box<Exp>},
+    Equals    { lhs: Box<Exp>, rhs: Box<Exp>},
+    NotEquals { lhs: Box<Exp>, rhs: Box<Exp>},
+    Greater   { lhs: Box<Exp>, rhs: Box<Exp>},
+    Less      { lhs: Box<Exp>, rhs: Box<Exp>},
+    GreaterEq { lhs: Box<Exp>, rhs: Box<Exp>},
+    LessEq    { lhs: Box<Exp>, rhs: Box<Exp>},
+    Plus      { lhs: Box<Exp>, rhs: Box<Exp>},
+    Minus     { lhs: Box<Exp>, rhs: Box<Exp>},
+    Times     { lhs: Box<Exp>, rhs: Box<Exp>},
+    Divide    { lhs: Box<Exp>, rhs: Box<Exp>},
 }
 
 impl Display for BinaryExp {
@@ -303,6 +276,11 @@ impl Display for BinaryExp {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct CallExp {
+    pub name: Box<Loc>, 
+    pub args: Vec<Box<Exp>>
+}
 
 impl Display for CallExp {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
@@ -310,28 +288,37 @@ impl Display for CallExp {
     }
 }
 
-
-
-impl Display for ClassDecl {
-    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-        write!(fmt, "{} : class {{\n{}}};\n", &self.id, fmt_vec(&self.member_f))
-    }
+#[derive(Debug, Clone, PartialEq)]
+pub enum Loc {
+    Id(Box<Id>),
+    Loc { base_class: Box<Loc>, field_name: Box<Id> }
 }
-
-
 
 impl Display for Loc {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-        use Loc::*;
+        use self::Loc::*;
         match self {
             Id(ref x) => write!(fmt, "{}", x),
-            MemberFieldExp { base_class , field_name} => write!(fmt, "{}--{}", base_class, field_name),
+            Loc { base_class , field_name} => write!(fmt, "{}--{}", base_class, field_name),
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Id {
+    pub name: String
 }
 
 impl Display for Id {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
         write!(fmt, "{}", &self.name)
     }
+}
+
+fn fmt_vec_commas<T: std::fmt::Display>(vec: &Vec<T>) -> String {
+    return vec.iter().map(|arg| format!("{}", arg)).collect::<Vec<String>>().join(", ");
+}
+
+fn fmt_vec<T: std::fmt::Display>(vec: &Vec<T>) -> String {
+    return vec.iter().map(|arg| format!("{}", arg)).collect::<Vec<String>>().join("");
 }

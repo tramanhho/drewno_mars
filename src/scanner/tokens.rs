@@ -36,8 +36,8 @@ impl fmt::Display for LexingError {
 
 #[derive(Debug, Logos, PartialEq, Clone)]
 #[logos(error = LexingError)]
-#[logos(skip r"[ \t\n\f]+")]
-#[logos(skip r#"//.*[\n]?"#)]
+#[logos(skip r"[ \s]+")]
+#[logos(skip r#"//.*[\n\r]?"#)]
 pub enum TokenType {
     //Keywords
     #[token("and", priority = 3)]

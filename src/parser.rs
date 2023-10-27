@@ -1,12 +1,16 @@
 #![allow(dead_code)]
 
+use lalrpop_util::lalrpop_mod;
+lalrpop_mod!(pub grammar, "/parser/grammar.rs");
+
 mod ast;
 use crate::parser::ast::*;
 
-use std::collections::HashMap;
+mod named_unparser;
+use crate::parser::named_unparser::*;
+use crate::parser::named_unparser::named_node::NamedNode;
 
-use lalrpop_util::lalrpop_mod;
-lalrpop_mod!(pub grammar, "/parser/grammar.rs");
+use std::collections::HashMap;
 
 pub fn unparse(prog: Box<Program>) -> String {
     add_tabs(prog.to_string())
@@ -48,93 +52,19 @@ fn add_tabs(input: String) -> String {
 }
 
 
-pub fn named_unparse(prog: Box<Program>) -> Result<String, &'static str> {
+pub fn named_unparse(prog: Box<Program>) -> String {
     let mut unparser: NamedUnparser = NamedUnparser {
         scope: 0,
-        table: HashMap::new()
+        table: HashMap::new(),
+        classes: HashMap::new(),
+        error: false
     };
-    println!("{}", prog.named_unparse(&mut unparser));
-    Ok("".to_string())
-}
-
-impl NamedUnparser {
-    fn add_entry(&mut self, id: String, kind: SymbolKind) {
-        let key : SymbolKey = SymbolKey {
-            id: id,
-            scope: self.scope,
-        };
-
-        self.table.insert(key, kind);
-    }
-}
-
-struct NamedUnparser {
-    scope: u8,
-    table: HashMap<SymbolKey, SymbolKind>
-}
-
-#[derive(Eq, Hash, PartialEq)]
-struct SymbolKey {
-    id: String,
-    scope: u8 // int incremented corresponding to nesting level, 0 = global
-}
-
-impl SymbolKey {
-    
-}
-enum SymbolKind {
-    Variable,
-    Class,
-    Function {args: Vec<Type>, ret: Option<Type>}
-    // Function
-}
-
-trait Node {
-    fn named_unparse(&self, unparser: &mut NamedUnparser) -> String;
-}
-
-impl Node for ast::Program {
-    fn named_unparse(&self, unparser: &mut NamedUnparser) -> String {
-        let mut output : String = "".to_owned();
-        for arg in self.globals.iter() {
-            output = output + &arg.named_unparse(unparser);
-        }
-        output
-    }
-}
-
-impl Node for ast::Decl {
-    fn named_unparse(&self, unparser: &mut NamedUnparser) -> String {
-        use Decl::*;
-
-        match *self {
-            VarDecl(ref x) => x.named_unparse(unparser),
-            ClassDecl(ref x) => x.named_unparse(unparser),
-            FnDecl(ref x) => x.named_unparse(unparser),
-        }
-    }
-}
-
-impl Node for ast::VarDecl {
-    fn named_unparse(&self, unparser: &mut NamedUnparser) -> String {
-        unparser.add_entry(self.id.to_string(), SymbolKind::Variable);
-        match &self.init_val {
-            Some(v) => format!("{}{{{}}} : {} = {};\n", &self.id, &self.var_type, &self.var_type, v),
-            None => format!("{} : {};\n", &self.id, &self.var_type),
-        }
-    }
-}
-
-impl Node for ast::ClassDecl {
-    fn named_unparse(&self, unparser: &mut NamedUnparser) -> String {
+    let named_unparse = add_tabs(prog.named_unparse(&mut unparser));
+    println!("{}", unparser);
+    if !unparser.error {
+        named_unparse
+    } else {
+        eprintln!("Name Analysis Failed");
         "".to_string()
-    }
-}
-
-impl Node for ast::FnDecl {
-    fn named_unparse(&self, unparser: &mut NamedUnparser) -> String {
-        // unparser.add_entry(self.id.to_string(), SymbolKind::Function{args: self.args, ret: self.ret});
-        // write!(fmt, r#"{} : ({}) {} {{\n{}}}\n"#, &self.id, fmt_vec_commas(&self.args), &self.ret, fmt_vec(&self.body))
-        //to do : go into formaldecl to make the function symbol (only need id + type)
     }
 }

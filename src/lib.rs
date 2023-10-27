@@ -134,9 +134,10 @@ pub fn run(config: Config) {
         ProcessMode::NamedUnparse => {
             let lexer = Lexer::new(&input[..]);
             let mut output = config.output;
+            // println!("{:?}", ProgramParser::new().parse(lexer));
             match ProgramParser::new().parse(lexer) {
                 Ok(x) => output
-                .write_all(named_unparse(x).unwrap().as_bytes())
+                .write_all(named_unparse(x).as_bytes())
                 .expect("Error writing to output file."),
                 
                 Err(x) => { eprintln!("Parse failed: {:?}", x); },
