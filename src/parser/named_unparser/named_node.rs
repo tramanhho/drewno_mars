@@ -121,34 +121,27 @@ impl NamedNode for ClassDecl {
 
 fn process_fn(unparser: &mut NamedUnparser, args: Vec<Box<FormalDecl>>, ret: Box<Type>) -> (&mut NamedUnparser, SymbolKind) {
     let mut arg_map : HashMap<String, Type> = HashMap::new();
+    unparser.scope += 1;
     for arg in args.iter() {
-        // check if void
-        let type_checker = *arg.clone();
         use self::FormalDecl::*;
-        use self::Type::*;
-        let var_type = match type_checker {
+        let (id, argkind)  = match *arg.clone() {
             VarDecl(x) => {
-                *x.var_type.clone()
+                (x.id.to_string(), SymbolKind::Variable { var_type: *x.var_type.clone() })
             },
-            FormalDecl{id: _, ref formal_type} => {
-                *formal_type.clone()
+            FormalDecl{ref id, ref formal_type} => {
+                (id.to_string(), SymbolKind::Variable { var_type: *formal_type.clone() })
             }
         };
-        match var_type {
-            Prim(PrimType::Void) | PerfectPrim(PrimType::Void) => unparser.report_error(NameError::BadType),
-            _ => ()
-        }
-        match arg_map.add(arg.clone()) {
-            Ok(_) => (),
-            Err(_) => unparser.report_error(NameError::MultipleDecl)
-        }
+        arg_map.add(arg.clone());
+        unparser.add_entry(id, argkind);
     }
-
+    unparser.scope -= 1;
     let value = SymbolKind::Function { 
         args: arg_map, 
         ret: *ret
     };
-
+    // println!("IN PROCESS FN:");
+    // unparser.print();
     (unparser, value)
 }
 
@@ -156,6 +149,7 @@ impl NamedNode for FnDecl {
     fn named_unparse(&self, unparser: &mut NamedUnparser) -> String {
         let (unparser, value) = process_fn(unparser, self.args.clone(), self.ret.clone());
         unparser.add_entry(self.id.to_string(), value.clone());
+        
         
         unparser.scope += 1;
         let (output, unparser) = self.clone().get_named_string(unparser);
@@ -339,11 +333,16 @@ fn get_id_named_string(name: String, unparser: &mut NamedUnparser) -> (String, &
         scope: 0
     };
     let mut output = "".to_string();
-    match unparser.table.entry(key) {
+    match unparser.table.entry(key.clone()) { // <== undo this clone later
         Occupied(x) => output = format!("{}{{{}}}", name, x.get().to_string()),
         Vacant(_) => match unparser.table.entry(key2) {
 			Occupied(x) => output = format!("{}{{{}}}", name, x.get().to_string()),
-			Vacant(_) => unparser.report_error(NameError::UndefinedDecl),
+			Vacant(_) =>  {
+                // println!("in get_id_named_string {}", key.clone());
+                // unparser.print();
+                unparser.report_named_error(NameError::UndefinedDecl, name);
+                // unparser.report_error(NameError::UndefinedDecl)
+            },
 		},
     }
     (output, unparser)
@@ -412,7 +411,7 @@ impl NamedNode for Id {
                 match unparser.table.entry(key2) {
                     Occupied(x) => format!("{}{{{}}}", &self.name, x.get().to_string()),
                     Vacant(_) => {
-                        unparser.report_error(NameError::UndefinedDecl);
+                        unparser.report_named_error(NameError::UndefinedDecl, self.name.clone());
                         "".to_string()
                     },
                 }

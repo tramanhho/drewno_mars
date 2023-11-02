@@ -14,7 +14,7 @@ pub enum NameError {
 impl NamedUnparser {
     fn add_entry(&mut self, id: String, kind: SymbolKind) {
         let key : SymbolKey = SymbolKey {
-            id: id,
+            id: id.clone(), // <== undo this clone later
             scope: self.scope,
         };
 		let mut error = false;
@@ -23,8 +23,9 @@ impl NamedUnparser {
 			SymbolKind::Variable { ref var_type } => {
 				match var_type {
 					Prim(PrimType::Void) | PerfectPrim(PrimType::Void) => {
-						self.report_error(NameError::BadType);
-						error = true;
+						// self.report_error(NameError::BadType);
+                        self.report_named_error(NameError::BadType, id.clone()); 
+						// error = true;
 					},
 					_ => ()
 				}
@@ -33,7 +34,8 @@ impl NamedUnparser {
 		};
 
         match self.table.entry(key.clone()) {
-            Occupied(_) => { self.report_error(NameError::MultipleDecl); error = true; },
+            // Occupied(_) => { self.report_error(NameError::MultipleDecl); error = true; },
+            Occupied(_) => { self.report_named_error(NameError::MultipleDecl, id); error = true; },
             Vacant(_) => { }
         }
 
@@ -48,6 +50,15 @@ impl NamedUnparser {
 			NameError::BadType => eprintln!("FATAL [range]: Invalid type in declaration"),
 			NameError::MultipleDecl => eprintln!("FATAL [range]: Multiply declared identifier"),
 			NameError::UndefinedDecl => eprintln!("FATAL [range]: Undeclared identifier")
+		}
+		self.error = true;
+	}
+
+    fn report_named_error(&mut self, error: NameError, var: String) {
+		match error {
+			NameError::BadType => eprintln!("FATAL [range]: Invalid type in declaration {var}"),
+			NameError::MultipleDecl => eprintln!("FATAL [range]: Multiply declared identifier {var}"),
+			NameError::UndefinedDecl => eprintln!("FATAL [range]: Undeclared identifier {var}")
 		}
 		self.error = true;
 	}
@@ -85,12 +96,17 @@ impl NamedUnparser {
 	fn remove_scope(&mut self, scope: u8) {
         self.table.retain(|k, _| k.scope != scope);
     }
+
+    fn print(&self) {
+        println!("{}", self);
+    }
 }
 
 impl Display for NamedUnparser {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
         let mut output : Vec<String> = Vec::new();
 		output.push("\n======================".to_string());
+        output.push(format!("Scope: {}", self.scope));
         output.push("Classes:".to_string());
         for (class_name, fields) in self.classes.iter() {
             output.push(format!("  {}: ", class_name));
@@ -149,12 +165,12 @@ impl Display for SymbolKind {
 }
 
 trait ArgTable {
-    fn add(&mut self, arg: Box<FormalDecl>) -> Result<(), String>;
+    fn add(&mut self, arg: Box<FormalDecl>) -> Result<(), ()>;
     fn get_types(&self) -> String;
 }
 
 impl ArgTable for HashMap<String, Type>{
-    fn add(&mut self, arg: Box<FormalDecl>) -> Result<(), String> {
+    fn add(&mut self, arg: Box<FormalDecl>) -> Result<(), ()> {
         let (arg_id, arg_type);
         use self::FormalDecl::*;
         match *arg {
@@ -169,7 +185,7 @@ impl ArgTable for HashMap<String, Type>{
         }
 
         match self.entry(arg_id.clone()) {
-            Occupied(x) => Err(format!("{} is already in the arg table", x.key())),
+            Occupied(x) => Err(()),
             Vacant(_) => {
                 self.insert(arg_id, *arg_type);
                 Ok(())
