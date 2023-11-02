@@ -1,18 +1,48 @@
+mod named_node;
+use named_node::NamedNode;
 
-pub mod named_node;
-use super::ast::*;
+use crate::parser::ast::*;
+use crate::parser::ast::position::{line_bytes, PositionAPI, Position};
+use crate::format::add_tabs;
 
 use std::collections::HashMap;
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::fmt::{Display, Formatter, Error};
+
+pub fn named_unparse(mut prog: Box<Program>, raw_input: String) -> String {
+    let mut unparser: NamedUnparser = NamedUnparser {
+        scope: 0,
+        table: HashMap::new(),
+        classes: HashMap::new(),
+        error: false
+    };
+
+    prog.correct_position_rec(&line_bytes(raw_input));
+    let named_unparse = add_tabs(prog.named_unparse(&mut unparser));
+
+    // println!("{}", unparser);
+    if !unparser.error {
+        named_unparse
+    } else {
+        eprintln!("Name Analysis Failed");
+        "".to_string()
+    }
+}
 pub enum NameError {
 	BadType,
 	MultipleDecl,
 	UndefinedDecl
 }
 
+pub struct NamedUnparser {
+    pub scope: u8,
+    pub table: HashMap<SymbolKey, SymbolKind>,
+    pub classes: HashMap<String, HashMap<String, SymbolKind>>,
+    pub error: bool
+}
+
 impl NamedUnparser {
-    fn add_entry(&mut self, id: String, kind: SymbolKind) {
+    fn add_entry(&mut self, id: String, kind: SymbolKind, position: &Position) {
         let key : SymbolKey = SymbolKey {
             id: id,
             scope: self.scope,
@@ -23,8 +53,8 @@ impl NamedUnparser {
 			SymbolKind::Variable { ref var_type } => {
 				match var_type {
 					Prim(PrimType::Void) | PerfectPrim(PrimType::Void) => {
-						self.report_error(NameError::BadType);
-						error = true;
+						self.report_error(NameError::BadType, position);
+						// error = true;
 					},
 					_ => ()
 				}
@@ -33,7 +63,7 @@ impl NamedUnparser {
 		};
 
         match self.table.entry(key.clone()) {
-            Occupied(_) => { self.report_error(NameError::MultipleDecl); error = true; },
+            Occupied(_) => { self.report_error(NameError::MultipleDecl, position); error = true; },
             Vacant(_) => { }
         }
 
@@ -43,21 +73,21 @@ impl NamedUnparser {
 
     }
 
-	fn report_error(&mut self, error: NameError) {
+	fn report_error(&mut self, error: NameError, position: &Position) {
 		match error {
-			NameError::BadType => eprintln!("FATAL [range]: Invalid type in declaration"),
-			NameError::MultipleDecl => eprintln!("FATAL [range]: Multiply declared identifier"),
-			NameError::UndefinedDecl => eprintln!("FATAL [range]: Undeclared identifier")
+			NameError::BadType => eprintln!("FATAL {position}: Invalid type in declaration"),
+			NameError::MultipleDecl => eprintln!("FATAL {position}: Multiply declared identifier"),
+			NameError::UndefinedDecl => eprintln!("FATAL {position}: Undeclared identifier")
 		}
 		self.error = true;
 	}
 
-    fn add_class_entry(&mut self, class_id: String, field_id: String, kind: SymbolKind) {
+    fn add_class_entry(&mut self, class_id: String, field_id: String, kind: SymbolKind, position: &Position) {
         match self.classes.entry(class_id.clone()) {
             Occupied(mut x) => {
 				let class = x.get_mut();
                 match class.entry(field_id.clone()) {
-                    Occupied(_) => self.report_error(NameError::MultipleDecl),
+                    Occupied(_) => self.report_error(NameError::MultipleDecl, position),
                     Vacant(_) => { class.insert(field_id, kind); }
                 }
             },
@@ -69,15 +99,15 @@ impl NamedUnparser {
         }
     }
 
-    fn add_class_instance(&mut self, class_id: String, var_id: String) {
+    fn add_class_instance(&mut self, class_id: String, var_id: String, position: &Position) {
         match self.classes.entry(class_id.clone()) {
             Occupied(x) => {
                 for field in x.get().clone().values() {
-                    self.add_entry( format!("{}--{}", var_id, class_id), field.clone());
+                    self.add_entry( format!("{}--{}", var_id, class_id), field.clone(), position);
                 }
             },
             Vacant(_) => {
-				self.report_error(NameError::UndefinedDecl);
+				self.report_error(NameError::UndefinedDecl, position);
             }
         }
     }
@@ -91,6 +121,8 @@ impl Display for NamedUnparser {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
         let mut output : Vec<String> = Vec::new();
 		output.push("\n======================".to_string());
+        output.push(format!("Scope: {}", self.scope));
+        output.push("Classes:".to_string());
         output.push("Classes:".to_string());
         for (class_name, fields) in self.classes.iter() {
             output.push(format!("  {}: ", class_name));
@@ -106,13 +138,6 @@ impl Display for NamedUnparser {
 		output.push("======================\n".to_string());
         write!(fmt, "{}", output.join("\n"))
     }
-}
-
-pub struct NamedUnparser {
-    pub scope: u8,
-    pub table: HashMap<SymbolKey, SymbolKind>,
-    pub classes: HashMap<String, HashMap<String, SymbolKind>>,
-    pub error: bool
 }
 
 #[derive(Eq, Hash, PartialEq, Clone, Debug)]
@@ -149,12 +174,12 @@ impl Display for SymbolKind {
 }
 
 trait ArgTable {
-    fn add(&mut self, arg: Box<FormalDecl>) -> Result<(), String>;
+    fn add(&mut self, arg: Box<FormalDecl>);
     fn get_types(&self) -> String;
 }
 
 impl ArgTable for HashMap<String, Type>{
-    fn add(&mut self, arg: Box<FormalDecl>) -> Result<(), String> {
+    fn add(&mut self, arg: Box<FormalDecl>) {
         let (arg_id, arg_type);
         use self::FormalDecl::*;
         match *arg {
@@ -162,19 +187,16 @@ impl ArgTable for HashMap<String, Type>{
                 arg_id = x.id.to_string();
                 arg_type = x.var_type;
             },
-            FormalDecl{ref id, ref formal_type} => {
+            FormalDecl{ref id, ref formal_type, } => {
                 arg_id = id.to_string();
                 arg_type = formal_type.clone();
             }
         }
 
         match self.entry(arg_id.clone()) {
-            Occupied(x) => Err(format!("{} is already in the arg table", x.key())),
-            Vacant(_) => {
-                self.insert(arg_id, *arg_type);
-                Ok(())
-            }
-        }
+            Occupied(_) => (),
+            Vacant(_) => { self.insert(arg_id, *arg_type); }
+        };
     }
 
     fn get_types(&self) -> String {

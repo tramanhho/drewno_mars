@@ -6,7 +6,13 @@ mod scanner;
 use scanner::{tokenizer, lexer::Lexer};
 
 mod parser;
-use parser::{unparse, named_unparse, grammar::*};
+use parser::{unparse, grammar::*};
+use parser::ast::position::{line_bytes, PositionAPI};
+
+mod format;
+
+mod analysis;
+use analysis::name::named_unparse;
 
 use indoc::indoc;
 
@@ -52,6 +58,7 @@ impl Config {
                             [<inputFile.dm> -p]: Checks if inputFile has syntactically correct Drewno Mars code.
                             [<inputFile.dm> <outputFile> -u]: Converts inputFile into canonical Drewno Mars code. Outputs result into <outputFile>.
                             [<inputFile.dm> <outputFile> -n]: Converts inputFile into canonical Drewno Mars code with types. Outputs result into <outputFile>.
+                            [<inputFile.dm> -n]: Checks if inputFile has syntactically correct Drewno Mars code.
                         
                         Try again with a supported option.
 
@@ -114,14 +121,22 @@ pub fn run(config: Config) {
         },
         ProcessMode::ParseCheck => {
             let lexer = Lexer::new(&input[..]);
+            // for token in lexer {
+            //     dbg!(token);
+            // }
+            
             match ProgramParser::new().parse(lexer) {
-                Ok(_) => (),
+                Ok(mut x) => {
+                    x.correct_position_rec(&line_bytes(input));
+                    println!("{:?}", x);
+                },
                 Err(_) => { eprintln!("syntax error\nParse failed"); },
             };
         },
         ProcessMode::Unparse => {
             let lexer = Lexer::new(&input[..]);
             let mut output = config.output;
+
             match ProgramParser::new().parse(lexer) {
                 Ok(x) => output
                 .write_all(unparse(x).as_bytes())
@@ -137,7 +152,7 @@ pub fn run(config: Config) {
             // println!("{:?}", ProgramParser::new().parse(lexer));
             match ProgramParser::new().parse(lexer) {
                 Ok(x) => output
-                .write_all(named_unparse(x).as_bytes())
+                .write_all(named_unparse(x, input).as_bytes())
                 .expect("Error writing to output file."),
                 
                 Err(x) => { eprintln!("Parse failed: {:?}", x); },

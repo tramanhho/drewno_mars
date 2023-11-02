@@ -1,5 +1,6 @@
 use crate::scanner::tokens::{TokenType, LexingError};
 use crate::parser::ast;
+use crate::parser::ast::position::Position;
 grammar;
 
 extern {
@@ -60,7 +61,7 @@ Comma<T>: Vec<T> = {
 };
 
 pub Program: Box<ast::Program> = {
-     <globals:Decl*> => Box::new(ast::Program{ globals } )
+     <globals:Decl*>=> Box::new(ast::Program{ globals } )
 }
 
 pub Decl: Box<ast::Decl> = {
@@ -75,15 +76,19 @@ pub VarDecl: Box<ast::VarDecl> = {
             id, 
             var_type,
             init_val: None,
+            // pos: id.span
         }
     ),
-    <id:Id> "COLON" <var_type: Type> "ASSIGN" <init_val: Exp> "SEMICOL" => Box::new(
-        ast::VarDecl {
-            id, 
-            var_type,
-            init_val: Some(init_val),
-        }
-    ),
+    <id:Id> "COLON" <var_type: Type> "ASSIGN" <init_val: Exp> "SEMICOL" => {
+        Box::new(
+            ast::VarDecl {
+                id, 
+                var_type,
+                init_val: Some(init_val),
+                // pos: id.span
+            }
+        )
+    },
 }
 
 pub Type: Box<ast::Type> = {
@@ -319,5 +324,5 @@ pub Loc: Box<ast::Loc> = {
 
 //loc
 pub Id: Box<ast::Id> = {
-    <name:"ID"> => Box::new(ast::Id{name})
+    <l:@L> <name:"ID"> <r:@R> => Box::new(ast::Id{name, position: Position::new(l, r)})
 };

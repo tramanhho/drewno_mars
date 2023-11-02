@@ -1,7 +1,9 @@
 use std::io::{self, Write};
 use logos::Logos;
-use crate::scanner::tokens::TokenType;
+
 pub mod tokens;
+use tokens::TokenType;
+
 pub mod lexer;
 
 pub fn tokenizer(input: Vec<&str>, mut tokens: Box<dyn Write>) {

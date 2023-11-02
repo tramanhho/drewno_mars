@@ -19,5 +19,3 @@ undeclared_fn : () void {
     // out of scope 
     give inner_scope;
 }
-
-
