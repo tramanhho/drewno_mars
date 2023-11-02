@@ -7,6 +7,7 @@ invaltype1 : void = 1 ;
 invaltype2fn1 : ( invaltype2 : void ) void { } //invalid type (void)->void
 invaltype2fn2 : (  ) void { 
     invaltype3 : void;
+    invaltype3 : void;
     invaltype2fn1 ( invaltype2 ); //invalid peram void
 }
 

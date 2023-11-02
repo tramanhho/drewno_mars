@@ -35,7 +35,7 @@ pub enum NameError {
 }
 
 pub struct NamedUnparser {
-    pub scope: u8,
+    pub scope: usize,
     pub table: HashMap<SymbolKey, SymbolKind>,
     pub classes: HashMap<String, HashMap<String, SymbolKind>>,
     pub error: bool
@@ -54,7 +54,7 @@ impl NamedUnparser {
 				match var_type {
 					Prim(PrimType::Void) | PerfectPrim(PrimType::Void) => {
 						self.report_error(NameError::BadType, position);
-						// error = true;
+						error = true;
 					},
 					_ => ()
 				}
@@ -112,8 +112,31 @@ impl NamedUnparser {
         }
     }
 
-	fn remove_scope(&mut self, scope: u8) {
+	fn remove_scope(&mut self, scope: usize) {
         self.table.retain(|k, _| k.scope != scope);
+    }
+
+    fn find_entry(&mut self, id: &Id) -> Result<SymbolKind, ()> {
+        let mut key_check: Vec<SymbolKey> = Vec::new();
+
+        for s in (0..self.scope).rev() {
+            key_check.push(SymbolKey {
+                id: id.to_string(),
+                scope: s
+            });
+        }
+
+        for key in key_check.into_iter() {
+            match self.table.clone().get(&key) {
+                Some(kind) => {
+                    return Ok(kind.clone()); 
+                },
+                None => (),
+            }
+        }
+        
+        self.report_error(NameError::UndefinedDecl, &id.position);
+        Err(())
     }
 }
 
@@ -143,7 +166,7 @@ impl Display for NamedUnparser {
 #[derive(Eq, Hash, PartialEq, Clone, Debug)]
 pub struct SymbolKey {
     id: String,
-    scope: u8 // int incremented corresponding to nesting level, 0 = global
+    scope: usize // int incremented corresponding to nesting level, 0 = global
 }
 
 // prepend class name to id, no need for class variant 
@@ -193,10 +216,9 @@ impl ArgTable for HashMap<String, Type>{
             }
         }
 
-        match self.entry(arg_id.clone()) {
-            Occupied(_) => (),
-            Vacant(_) => { self.insert(arg_id, *arg_type); }
-        };
+        if !self.contains_key(&arg_id) {
+            self.insert(arg_id, *arg_type);
+        }
     }
 
     fn get_types(&self) -> String {

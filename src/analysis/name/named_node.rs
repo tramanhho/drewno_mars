@@ -123,17 +123,17 @@ fn process_fn(unparser: &mut NamedUnparser, args: Vec<Box<FormalDecl>>, ret: Box
     let mut arg_map : HashMap<String, Type> = HashMap::new();
     unparser.scope += 1;
     for arg in args.iter() {
-        use self::FormalDecl::*;
-        let (id, argkind)  = match *arg.clone() {
-            VarDecl(x) => {
-                (x.id, SymbolKind::Variable { var_type: *x.var_type.clone() })
-            },
-            FormalDecl{id, ref formal_type} => {
-                (id, SymbolKind::Variable { var_type: *formal_type.clone() })
-            }
-        };
+        // use self::FormalDecl::*;
+        // let (id, argkind)  = match *arg.clone() {
+        //     VarDecl(x) => {
+        //         (x.id, SymbolKind::Variable { var_type: *x.var_type.clone() })
+        //     },
+        //     FormalDecl{id, ref formal_type} => {
+        //         (id, SymbolKind::Variable { var_type: *formal_type.clone() })
+        //     }
+        // };
         arg_map.add(arg.clone());
-        unparser.add_entry(id.to_string(), argkind, &id.position);
+        // unparser.add_entry(id.to_string(), argkind, &id.position); // <- we don't need? bc we process it in print_args later
     }
 
     let value = SymbolKind::Function { 
@@ -311,7 +311,7 @@ impl NamedNode for BinaryExp {
 
 impl NamedNode for CallExp {
     fn named_unparse(&self, unparser: &mut NamedUnparser) -> String {
-        println!("in call exp... {}({:?})", &self.name, &self.args);
+        // println!("in call exp... {}({:?})", &self.name, &self.args);
         format!("{}({})", &self.name.named_unparse(unparser), &self.args.clone().named_unparse_vec(unparser, ", "))
     }
 }
@@ -324,32 +324,18 @@ impl NamedNode for Loc {
 
 fn get_id_named_string(name: Loc, unparser: &mut NamedUnparser) -> (String, &mut NamedUnparser) {
     use crate::parser::ast::Loc::*;
-    println!("in get id named string: {}", name);
-    println!("{}", unparser);
+    // println!("in get id named string: {}", name);
+    // println!("{}", unparser);
     let name = match name {
         Id(x) => x.clone(),
         Loc{base_class: _, field_name} => field_name.clone(),
     };
 
-    let key = SymbolKey {
-        id: name.to_string(),
-        scope: unparser.scope
+    let output = match unparser.find_entry(&name) {
+        Ok(x) => format!("{}{{{}}}", name, x.to_string()),
+        Err(_) => "".to_string(),
     };
-    let key2 = SymbolKey {
-        id: name.to_string(),
-        scope: 0
-    };
-    let mut output = "".to_string();
-    match unparser.table.entry(key) {
-        Occupied(x) => output = format!("{}{{{}}}", name, x.get().to_string()),
-        Vacant(_) => match unparser.table.entry(key2) {
-			Occupied(x) => output = format!("{}{{{}}}", name, x.get().to_string()),
-			Vacant(_) => {
-                println!("{}: {}", &name.position, &name.name);
-                unparser.report_error(NameError::UndefinedDecl, &name.position)
-            },
-		},
-    }
+
     (output, unparser)
 }
 
@@ -399,26 +385,9 @@ impl Loc {
 
 impl NamedNode for Id {
     fn named_unparse(&self, unparser: &mut NamedUnparser) -> String {
-        let key = SymbolKey {
-            id: self.name.clone(),
-            scope: unparser.scope
-        };
-        let key2 = SymbolKey {
-            id: self.name.clone(),
-            scope: 0
-        };
-        match unparser.table.entry(key) {
-            Occupied(x) => format!("{}{{{}}}", &self.name, x.get().to_string()),
-            Vacant(_) => {
-                match unparser.table.entry(key2) {
-                    Occupied(x) => format!("{}{{{}}}", &self.name, x.get().to_string()),
-                    Vacant(_) => {
-                        println!("{}: {}", &self.position, &self.name);
-                        unparser.report_error(NameError::UndefinedDecl, &self.position);
-                        "".to_string()
-                    },
-                }
-            },
+        match unparser.find_entry(self) {
+            Ok(x) => format!("{}{{{}}}", &self.name, x.to_string()),
+            Err(_) => "".to_string(),
         }
     }
 }
