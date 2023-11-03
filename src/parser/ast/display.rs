@@ -31,13 +31,22 @@ impl Display for VarDecl {
 
 impl Display for Type {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-        use Type::*;
-        match *self {
-            Prim(ref x) => write!(fmt, "{}", x),
-            PerfectPrim(ref x) => write!(fmt, "perfect {}", x),
-            Class(ref x) => write!(fmt, "{}", x),
-            PerfectClass(ref x) => write!(fmt, "perfect {}", x),
-        }   
+        if self.perfect {
+            write!(fmt, "perfect {}", self.kind)
+        } else {
+            write!(fmt, "{}", self.kind)
+        }
+    }
+}
+
+impl Display for TypeKind {
+    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+        use TypeKind::*;
+
+        match self {
+            Prim(x) => write!(fmt, "{}", x),
+            Class(x) => write!(fmt, "{}", x),
+        }
     }
 }
 
@@ -116,7 +125,13 @@ impl Display for LineStmt {
 
 impl Display for Exp {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-        use Exp::*;
+        write!(fmt, "{}", self.kind)
+    }
+}
+
+impl Display for ExpKind {
+    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+        use ExpKind::*;
         match self {
             True => write!(fmt, "true"),
             False => write!(fmt, "false"),
@@ -133,30 +148,42 @@ impl Display for Exp {
 
 impl Display for UnaryExp {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-        use UnaryExp::*;
+        write!(fmt, "{}{}", self.kind, self.exp)
+    }
+}
+
+impl Display for UnaryExpKind {
+    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+        use UnaryExpKind::*;
         match self {
-            Neg{exp} => write!(fmt, "-{}", exp),
-            Not{exp} => write!(fmt, "!{}", exp),
+            Neg => write!(fmt, "-"),
+            Not => write!(fmt, "!"),
         }
     }
 }
 
 impl Display for BinaryExp {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-        use BinaryExp::*;
+        write!(fmt, "{} {} {}", self.lhs, self.kind, self.rhs)
+    }
+}
+
+impl Display for BinaryExpKind {
+    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+        use BinaryExpKind::*;
         match self {
-            And{lhs, rhs} => write!(fmt, "{} and {}", lhs, rhs),
-            Or{lhs, rhs} => write!(fmt, "{} or {}", lhs, rhs),
-            Equals{lhs, rhs} => write!(fmt, "{} == {}", lhs, rhs),
-            NotEquals{lhs, rhs} => write!(fmt, "{} != {}", lhs, rhs),
-            Greater{lhs, rhs} => write!(fmt, "{} > {}", lhs, rhs),
-            Less{lhs, rhs} => write!(fmt, "{} < {}", lhs, rhs),
-            GreaterEq{lhs, rhs} => write!(fmt, "{} >= {}", lhs, rhs),
-            LessEq{lhs, rhs} => write!(fmt, "{} <= {}", lhs, rhs),
-            Plus{lhs, rhs} => write!(fmt, "{} + {}", lhs, rhs),
-            Minus{lhs, rhs} => write!(fmt, "{} - {}", lhs, rhs),
-            Times{lhs, rhs} => write!(fmt, "{} * {}", lhs, rhs),
-            Divide{lhs, rhs} => write!(fmt, "{} / {}", lhs, rhs),
+            And => write!(fmt, "and"),
+            Or => write!(fmt, "or"),
+            Equals => write!(fmt, "=="),
+            NotEquals => write!(fmt, "!="),
+            Greater => write!(fmt, ">"),
+            Less => write!(fmt, "<"),
+            GreaterEq => write!(fmt, ">="),
+            LessEq => write!(fmt, "<="),
+            Plus => write!(fmt, "+"),
+            Minus => write!(fmt, "-"),
+            Times => write!(fmt, "*"),
+            Divide => write!(fmt, "/"),
         }
     }
 }

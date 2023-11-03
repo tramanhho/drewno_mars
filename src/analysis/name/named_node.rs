@@ -25,12 +25,6 @@ impl NamedNodeVector for Vec<Box<Exp>> {
     }
 }
 
-// fn named_unparse_vec(vec: Vec<Box<dyn NamedNode>>, unparser: &mut NamedUnparser, join: &'static str) -> String {
-//     return vec.iter()
-//         .map(|arg| arg.named_unparse(unparser))
-//         .collect::<Vec<String>>().join(join);
-// }
-
 
 impl NamedNode for Box<Program> {
     fn named_unparse(&self, unparser: &mut NamedUnparser) -> String {
@@ -263,7 +257,13 @@ impl NamedNode for LineStmt {
 
 impl NamedNode for Exp {
     fn named_unparse(&self, unparser: &mut NamedUnparser) -> String {
-        use Exp::*;
+        self.kind.named_unparse(unparser)
+    }
+}
+
+impl NamedNode for ExpKind {
+    fn named_unparse(&self, unparser: &mut NamedUnparser) -> String {
+        use ExpKind::*;
 
         match self {
             True => "true".to_string(),
@@ -281,31 +281,13 @@ impl NamedNode for Exp {
 
 impl NamedNode for UnaryExp {
     fn named_unparse(&self, unparser: &mut NamedUnparser) -> String {
-        use UnaryExp::*;
-        match self {
-            Neg{exp} => format!("-{}", exp.named_unparse(unparser)),
-            Not{exp} => format!("!{}", exp.named_unparse(unparser)),
-        }
+        format!("{}{}", self.kind, self.exp.named_unparse(unparser))
     }
 }
 
 impl NamedNode for BinaryExp {
     fn named_unparse(&self, unparser: &mut NamedUnparser) -> String {
-        use BinaryExp::*;
-        match self {
-            And{lhs, rhs} => format!("{} and {}", lhs.named_unparse(unparser), rhs.named_unparse(unparser)),
-            Or{lhs, rhs} => format!("{} or {}", lhs.named_unparse(unparser), rhs.named_unparse(unparser)),
-            Equals{lhs, rhs} => format!("{} == {}", lhs.named_unparse(unparser), rhs.named_unparse(unparser)),
-            NotEquals{lhs, rhs} => format!("{} != {}", lhs.named_unparse(unparser), rhs.named_unparse(unparser)),
-            Greater{lhs, rhs} => format!("{} > {}", lhs.named_unparse(unparser), rhs.named_unparse(unparser)),
-            Less{lhs, rhs} => format!("{} < {}", lhs.named_unparse(unparser), rhs.named_unparse(unparser)),
-            GreaterEq{lhs, rhs} => format!("{} >= {}", lhs.named_unparse(unparser), rhs.named_unparse(unparser)),
-            LessEq{lhs, rhs} => format!("{} <= {}", lhs.named_unparse(unparser), rhs.named_unparse(unparser)),
-            Plus{lhs, rhs} => format!("{} + {}", lhs.named_unparse(unparser), rhs.named_unparse(unparser)),
-            Minus{lhs, rhs} => format!("{} - {}", lhs.named_unparse(unparser), rhs.named_unparse(unparser)),
-            Times{lhs, rhs} => format!("{} * {}", lhs.named_unparse(unparser), rhs.named_unparse(unparser)),
-            Divide{lhs, rhs} => format!("{} / {}", lhs.named_unparse(unparser), rhs.named_unparse(unparser)),
-        }
+        format!("{} {} {}", self.lhs.named_unparse(unparser), self.kind, self.rhs.named_unparse(unparser))
     }
 }
 

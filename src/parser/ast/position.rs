@@ -189,7 +189,13 @@ impl PositionAPI for LineStmt {
 
 impl PositionAPI for Exp {
     fn correct_position_rec(&mut self, line_bytes: &Vec<usize>) {
-        use Exp::*;
+        self.kind.correct_position_rec(line_bytes);
+    }
+}
+
+impl PositionAPI for ExpKind {
+    fn correct_position_rec(&mut self, line_bytes: &Vec<usize>) {
+		use ExpKind::*;
         match self {
             True => (),
             False => (),
@@ -207,67 +213,14 @@ impl PositionAPI for Exp {
 
 impl PositionAPI for UnaryExp {
     fn correct_position_rec(&mut self, line_bytes: &Vec<usize>) {
-        use UnaryExp::*;
-        match self {
-            Neg{exp} => exp.correct_position_rec(line_bytes),
-            Not{exp} => exp.correct_position_rec(line_bytes),
-        }
+        self.exp.correct_position_rec(line_bytes);
     }
 }
 
 impl PositionAPI for BinaryExp {
     fn correct_position_rec(&mut self, line_bytes: &Vec<usize>) {
-        use BinaryExp::*;
-        match self {
-            And{lhs, rhs} => {
-				lhs.correct_position_rec(line_bytes);
-				rhs.correct_position_rec(line_bytes);
-			},
-            Or{lhs, rhs} => {
-				lhs.correct_position_rec(line_bytes);
-				rhs.correct_position_rec(line_bytes);
-			},
-            Equals{lhs, rhs} => {
-				lhs.correct_position_rec(line_bytes);
-				rhs.correct_position_rec(line_bytes);
-			},
-            NotEquals{lhs, rhs} => {
-				lhs.correct_position_rec(line_bytes);
-				rhs.correct_position_rec(line_bytes);
-			},
-            Greater{lhs, rhs} => {
-				lhs.correct_position_rec(line_bytes);
-				rhs.correct_position_rec(line_bytes);
-			},
-            Less{lhs, rhs} => {
-				lhs.correct_position_rec(line_bytes);
-				rhs.correct_position_rec(line_bytes);
-			},
-            GreaterEq{lhs, rhs} => {
-				lhs.correct_position_rec(line_bytes);
-				rhs.correct_position_rec(line_bytes);
-			},
-            LessEq{lhs, rhs} => {
-				lhs.correct_position_rec(line_bytes);
-				rhs.correct_position_rec(line_bytes);
-			},
-            Plus{lhs, rhs} => {
-				lhs.correct_position_rec(line_bytes);
-				rhs.correct_position_rec(line_bytes);
-			},
-            Minus{lhs, rhs} => {
-				lhs.correct_position_rec(line_bytes);
-				rhs.correct_position_rec(line_bytes);
-			},
-            Times{lhs, rhs} => {
-				lhs.correct_position_rec(line_bytes);
-				rhs.correct_position_rec(line_bytes);
-			},
-            Divide{lhs, rhs} => {
-				lhs.correct_position_rec(line_bytes);
-				rhs.correct_position_rec(line_bytes);
-			},
-        }
+        self.lhs.correct_position_rec(line_bytes);
+		self.rhs.correct_position_rec(line_bytes);
     }
 }
 

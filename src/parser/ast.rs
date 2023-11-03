@@ -24,11 +24,24 @@ pub struct VarDecl {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Type {
+pub struct Type {
+    pub perfect: bool,
+    pub kind: Box<TypeKind>
+}
+
+impl Type {
+    pub fn new(kind: TypeKind, perfect: bool) -> Box<Type> {
+        Box::new(Type {
+            perfect: perfect,
+            kind: Box::new(kind)
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum TypeKind {
     Prim(PrimType),
     Class(Box<Id>),
-    PerfectPrim(PrimType),
-    PerfectClass(Box<Id>),
 }
 
 #[derive(Debug, Clone, PartialEq, Copy)]
@@ -91,7 +104,22 @@ pub enum LineStmt {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Exp {
+pub struct Exp {
+    pub expr_type: Option<Box<Type>>,
+    pub kind: Box<ExpKind>
+}
+
+impl Exp {
+    pub fn new(kind: Box<ExpKind>) -> Box<Exp> {
+        Box::new(Exp {
+            expr_type: None,
+            kind: kind
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum ExpKind {
     True,
     False,
     Magic,
@@ -103,26 +131,64 @@ pub enum Exp {
     Loc(Box<Loc>),
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum UnaryExp {
-    Neg { exp: Box<Exp>},
-    Not { exp: Box<Exp>},
+impl ExpKind {
+    pub fn new(kind: ExpKind) -> Box<ExpKind> {
+        Box::new(kind)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum BinaryExp {
-    And       { lhs: Box<Exp>, rhs: Box<Exp>},
-    Or        { lhs: Box<Exp>, rhs: Box<Exp>},
-    Equals    { lhs: Box<Exp>, rhs: Box<Exp>},
-    NotEquals { lhs: Box<Exp>, rhs: Box<Exp>},
-    Greater   { lhs: Box<Exp>, rhs: Box<Exp>},
-    Less      { lhs: Box<Exp>, rhs: Box<Exp>},
-    GreaterEq { lhs: Box<Exp>, rhs: Box<Exp>},
-    LessEq    { lhs: Box<Exp>, rhs: Box<Exp>},
-    Plus      { lhs: Box<Exp>, rhs: Box<Exp>},
-    Minus     { lhs: Box<Exp>, rhs: Box<Exp>},
-    Times     { lhs: Box<Exp>, rhs: Box<Exp>},
-    Divide    { lhs: Box<Exp>, rhs: Box<Exp>},
+pub struct UnaryExp {
+    pub exp: Box<Exp>,
+    pub kind: Box<UnaryExpKind>,
+}
+
+impl UnaryExp {
+    pub fn new(exp: Box<Exp>, kind: UnaryExpKind) -> Box<UnaryExp> {
+        Box::new(UnaryExp {
+            exp: exp,
+            kind: Box::new(kind)
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum UnaryExpKind {
+    Neg,
+    Not,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct BinaryExp {
+    pub lhs: Box<Exp>, 
+    pub rhs: Box<Exp>,
+    pub kind: Box<BinaryExpKind>
+}
+
+impl BinaryExp {
+    pub fn new(lhs: Box<Exp>, rhs: Box<Exp>, kind: BinaryExpKind) -> Box<BinaryExp> {
+        Box::new(BinaryExp {
+            lhs: lhs,
+            rhs: rhs,
+            kind: Box::new(kind)
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum BinaryExpKind {
+    And,
+    Or,
+    Equals,
+    NotEquals,
+    Greater,
+    Less,
+    GreaterEq,
+    LessEq,
+    Plus,
+    Minus,
+    Times,
+    Divide,
 }
 
 #[derive(Debug, Clone, PartialEq)]

@@ -48,11 +48,11 @@ impl NamedUnparser {
             scope: self.scope,
         };
 		let mut error = false;
-		use crate::parser::ast::Type::*;
+		use crate::parser::ast::TypeKind::*;
 		match kind {
 			SymbolKind::Variable { ref var_type } => {
-				match var_type {
-					Prim(PrimType::Void) | PerfectPrim(PrimType::Void) => {
+				match *var_type.kind {
+					Prim(PrimType::Void) => {
 						self.report_error(NameError::BadType, position);
 						error = true;
 					},
