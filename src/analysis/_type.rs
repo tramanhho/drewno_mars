@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::parser::ast::*;
-use crate::parser::ast::position::Position;
+use crate::parser::ast::span::Span;
 
 mod type_node;
 use type_node::*;
@@ -13,8 +13,9 @@ pub fn type_error_check(mut prog: Box<Program>) -> Result<(), ()> {
 		error: false
     };
 
+	println!("uwo?");
     prog.analyze_type(&mut analyzer);
-
+	println!("owo?");
     if analyzer.error {
         eprintln!("Type Analysis Failed");
     } 
@@ -76,29 +77,29 @@ impl TypeAnalyzer {
 		self.classes.insert(class.id.to_string(), field_types);
 	}
 
-	fn report_error(&mut self, err: ErrorType, position: Position) {
+	fn report_error(&mut self, err: ErrorType, span: Span) {
 		self.error = true;
 		use self::ErrorType::*;
 
 		match err {
-			GiveFn 			=> eprintln!("FATAL {position}: Attempt to output a function"),
-			GiveClass 		=> eprintln!("FATAL {position}: Attempt to output a class"), 
-			GiveVoid 		=> eprintln!("FATAL {position}: Attempt to output void"), 
-			ReadFn 			=> eprintln!("FATAL {position}: Attempt to assign user input to function"), 
-			ReadClass		=> eprintln!("FATAL {position}: Attempt to assign user input to class"), 
-			CallNonFn 		=> eprintln!("FATAL {position}: Attempt to call a non-function"), 
-			FnWrongArgNum 	=> eprintln!("FATAL {position}: Function call with wrong number of args"), 
-			FnWrongArgType 	=> eprintln!("FATAL {position}: Type of actual does not match type of formal"), 
-			ReturnMissing	=> eprintln!("FATAL {position}: Missing return value "), 
-			ReturnBad 		=> eprintln!("FATAL {position}: Return with a value in void function"), 
-			ReturnVoid 	  	=> eprintln!("FATAL {position}: Bad return value"), 
-			WrongOpMath  	=> eprintln!("FATAL {position}: Arithmetic operator applied to invalid operand"), 
-			WrongOpCmp   	=> eprintln!("FATAL {position}: Relational operator applied to non-numeric operand"), 
-			WrongOpLogic	=> eprintln!("FATAL {position}: Logical operator applied to non-bool operand"), 
-			CondNonBool		=> eprintln!("FATAL {position}: Non-bool expression used as a condition"), 
-			BadEquality 	=> eprintln!("FATAL {position}: Invalid equality operand"), 
-			BadAssign 		=> eprintln!("FATAL {position}: Invalid assignment operand"), 
-			NonLval 		=> eprintln!("FATAL {position}: Non-Lval assignment"), 
+			GiveFn 			=> eprintln!("FATAL {span}: Attempt to output a function"),
+			GiveClass 		=> eprintln!("FATAL {span}: Attempt to output a class"), 
+			GiveVoid 		=> eprintln!("FATAL {span}: Attempt to output void"), 
+			ReadFn 			=> eprintln!("FATAL {span}: Attempt to assign user input to function"), 
+			ReadClass		=> eprintln!("FATAL {span}: Attempt to assign user input to class"), 
+			CallNonFn 		=> eprintln!("FATAL {span}: Attempt to call a non-function"), 
+			FnWrongArgNum 	=> eprintln!("FATAL {span}: Function call with wrong number of args"), 
+			FnWrongArgType 	=> eprintln!("FATAL {span}: Type of actual does not match type of formal"), 
+			ReturnMissing	=> eprintln!("FATAL {span}: Missing return value "), 
+			ReturnBad 		=> eprintln!("FATAL {span}: Return with a value in void function"), 
+			ReturnVoid 	  	=> eprintln!("FATAL {span}: Bad return value"), 
+			WrongOpMath  	=> eprintln!("FATAL {span}: Arithmetic operator applied to invalid operand"), 
+			WrongOpCmp   	=> eprintln!("FATAL {span}: Relational operator applied to non-numeric operand"), 
+			WrongOpLogic	=> eprintln!("FATAL {span}: Logical operator applied to non-bool operand"), 
+			CondNonBool		=> eprintln!("FATAL {span}: Non-bool expression used as a condition"), 
+			BadEquality 	=> eprintln!("FATAL {span}: Invalid equality operand"), 
+			BadAssign 		=> eprintln!("FATAL {span}: Invalid assignment operand"), 
+			NonLval 		=> eprintln!("FATAL {span}: Non-Lval assignment"), 
 		}
 	}
 }

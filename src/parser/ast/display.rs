@@ -196,7 +196,13 @@ impl Display for CallExp {
 
 impl Display for Loc {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-        use self::Loc::*;
+        write!(fmt, "{}", self.kind)
+    }
+}
+
+impl Display for LocKind {
+    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+        use self::LocKind::*;
         match self {
             Id(ref x) => write!(fmt, "{}", x),
             Loc { base_class , field_name} => write!(fmt, "{}--{}", base_class, field_name),

@@ -7,12 +7,13 @@ use scanner::{tokenizer, lexer::Lexer};
 
 mod parser;
 use parser::{unparse, grammar::*};
-use parser::ast::position::{line_bytes, PositionAPI};
+use parser::ast::span::{line_bytes, node::SpanNode};
 
 mod format;
 
 mod analysis;
 use analysis::name::named_unparse;
+use analysis::_type::type_error_check;
 
 use indoc::indoc;
 
@@ -27,6 +28,7 @@ enum ProcessMode {
     ParseCheck,
     Unparse,
     NamedUnparse,
+    TypeCheck
 }
 
 
@@ -52,13 +54,14 @@ impl Config {
                     "-p" => Some(ProcessMode::ParseCheck),
                     "-u" => Some(ProcessMode::Unparse),
                     "-n" => Some(ProcessMode::NamedUnparse),
+                    "-c" => Some(ProcessMode::TypeCheck),
                     _ => return Err(indoc!{"
                         The only supported options right now are:
                             [<inputFile.dm> -t <outputFile> ]: Tokenizes inputFile. Outputs result into <outputFile>.
                             [<inputFile.dm> -p]: Checks if inputFile has syntactically correct Drewno Mars code.
                             [<inputFile.dm> <outputFile> -u]: Converts inputFile into canonical Drewno Mars code. Outputs result into <outputFile>.
                             [<inputFile.dm> <outputFile> -n]: Converts inputFile into canonical Drewno Mars code with types. Outputs result into <outputFile>.
-                            [<inputFile.dm> -n]: Checks if inputFile has syntactically correct Drewno Mars code.
+                            [<inputFile.dm> -c]: Checks if the Drewno Mars code in inputFile passes Type Analysis.
                         
                         Try again with a supported option.
 
@@ -127,7 +130,7 @@ pub fn run(config: Config) {
             
             match ProgramParser::new().parse(lexer) {
                 Ok(mut x) => {
-                    x.correct_position_rec(&line_bytes(input));
+                    x.correct_span_rec(&line_bytes(input));
                     println!("{:?}", x);
                 },
                 Err(_) => { eprintln!("syntax error\nParse failed"); },
@@ -155,6 +158,14 @@ pub fn run(config: Config) {
                 .write_all(named_unparse(x, input).as_bytes())
                 .expect("Error writing to output file."),
                 
+                Err(x) => { eprintln!("Parse failed: {:?}", x); },
+            };
+        },
+
+        ProcessMode::TypeCheck => {
+            let lexer = Lexer::new(&input[..]);
+            match ProgramParser::new().parse(lexer) {
+                Ok(x) => { type_error_check(x); },
                 Err(x) => { eprintln!("Parse failed: {:?}", x); },
             };
         },

@@ -1,6 +1,6 @@
 use crate::scanner::tokens::{TokenType, LexingError};
 use crate::parser::ast::*;
-use crate::parser::ast::position::Position;
+use crate::parser::ast::span::Span;
 grammar;
 
 extern {
@@ -187,52 +187,52 @@ pub LineStmt: Box<LineStmt> = {
 
 pub Exp: Box<Exp> = {
     // #[precedence(level="2")] #[assoc(side="right")]
-    <lhs:Term> "EQUALS" <rhs:Exp> => Exp::new(
+    <l:@L> <lhs:Term> "EQUALS" <rhs:Exp> <r:@R> => Exp::new(
         Box::new(ExpKind::BinaryExp(BinaryExp::new(
             lhs,
             rhs,
-            BinaryExpKind::Equals
-        )))
+            BinaryExpKind::Equals, l, r
+        ))), l, r
     ),
 
-    <lhs:Term> "NOTEQUALS" <rhs:Exp> => Exp::new(
+    <l:@L> <lhs:Term> "NOTEQUALS" <rhs:Exp> <r:@R> => Exp::new(
         Box::new(ExpKind::BinaryExp(BinaryExp::new(
             lhs,
             rhs,
-            BinaryExpKind::NotEquals
-        )))
+            BinaryExpKind::NotEquals, l, r
+        ))), l, r
     ),
 
-    <lhs:Term> "GREATER" <rhs:Exp> => Exp::new(
+    <l:@L> <lhs:Term> "GREATER" <rhs:Exp> <r:@R> => Exp::new(
         Box::new(ExpKind::BinaryExp(BinaryExp::new(
             lhs,
             rhs,
-            BinaryExpKind::Greater
-        )))
+            BinaryExpKind::Greater, l, r
+        ))), l, r
     ),
 
-    <lhs:Term> "GREATEREQ" <rhs:Exp> => Exp::new(
+    <l:@L> <lhs:Term> "GREATEREQ" <rhs:Exp> <r:@R> => Exp::new(
         Box::new(ExpKind::BinaryExp(BinaryExp::new(
             lhs,
             rhs,
-            BinaryExpKind::GreaterEq
-        )))
+            BinaryExpKind::GreaterEq, l, r
+        ))), l, r
     ),
 
-    <lhs:Term> "LESS" <rhs:Exp> => Exp::new(
+    <l:@L> <lhs:Term> "LESS" <rhs:Exp> <r:@R> => Exp::new(
         Box::new(ExpKind::BinaryExp(BinaryExp::new(
             lhs,
             rhs,
-            BinaryExpKind::Less
-        )))
+            BinaryExpKind::Less, l, r
+        ))), l, r
     ),
 
-    <lhs:Term> "LESSEQ" <rhs:Exp> => Exp::new(
+    <l:@L> <lhs:Term> "LESSEQ" <rhs:Exp> <r:@R> => Exp::new(
         Box::new(ExpKind::BinaryExp(BinaryExp::new(
             lhs,
             rhs,
-            BinaryExpKind::LessEq
-        )))
+            BinaryExpKind::LessEq, l, r
+        ))), l, r
     ),
 
     // #[precedence(level="1")]
@@ -240,66 +240,52 @@ pub Exp: Box<Exp> = {
 };
 
 pub BabyExp: Box<Exp> = {
-    <lhs:Term> "DASH" <rhs:Exp> => Exp::new(
+    <l:@L> <lhs:Term> "DASH" <rhs:Exp> <r:@R> => Exp::new(
         Box::new(ExpKind::BinaryExp(BinaryExp::new(
-            lhs,
-            rhs,
-            BinaryExpKind::Minus
-        )))
+            lhs, rhs, BinaryExpKind::Minus, l, r
+        ))), l, r
     ),
 
-    <lhs:Term> "CROSS" <rhs:Exp> => Exp::new(
+    <l:@L> <lhs:Term> "CROSS" <rhs:Exp> <r:@R> => Exp::new(
         Box::new(ExpKind::BinaryExp(BinaryExp::new(
-            lhs,
-            rhs,
-            BinaryExpKind::Plus
-        )))
+            lhs, rhs, BinaryExpKind::Plus, l, r
+        ))), l, r
     ),
 
-    <lhs:Term> "STAR" <rhs:Exp> => Exp::new(
+    <l:@L> <lhs:Term> "STAR" <rhs:Exp> <r:@R> => Exp::new(
         Box::new(ExpKind::BinaryExp(BinaryExp::new(
-            lhs,
-            rhs,
-            BinaryExpKind::Times
-        )))
+            lhs, rhs, BinaryExpKind::Times, l, r
+        ))), l, r
     ),
 
-    <lhs:Term> "SLASH" <rhs:Exp> => Exp::new(
+    <l:@L> <lhs:Term> "SLASH" <rhs:Exp> <r:@R> => Exp::new(
         Box::new(ExpKind::BinaryExp(BinaryExp::new(
-            lhs,
-            rhs,
-            BinaryExpKind::Divide
-        )))
+            lhs, rhs, BinaryExpKind::Divide, l, r
+        ))), l, r
     ),
 
-    <lhs:Term> "AND" <rhs:Exp> => Exp::new(
+    <l:@L> <lhs:Term> "AND" <rhs:Exp> <r:@R> => Exp::new(
         Box::new(ExpKind::BinaryExp(BinaryExp::new(
-            lhs,
-            rhs,
-            BinaryExpKind::And
-        )))
+            lhs, rhs, BinaryExpKind::And, l, r
+        ))), l, r
     ), 
 
-    <lhs:Term> "OR" <rhs:Exp> => Exp::new(
+    <l:@L> <lhs:Term> "OR" <rhs:Exp> <r:@R> => Exp::new(
         Box::new(ExpKind::BinaryExp(BinaryExp::new(
-            lhs,
-            rhs,
-            BinaryExpKind::Or
-        )))
+            lhs, rhs, BinaryExpKind::Or, l, r
+        ))), l, r
     ), 
 
-    "NOT" <exp:Exp> => Exp::new(
+    <l:@L> "NOT" <exp:Exp> <r:@R> => Exp::new(
         Box::new(ExpKind::UnaryExp(UnaryExp::new(
-            exp,
-            UnaryExpKind::Not
-        )))
+            exp, UnaryExpKind::Not, l, r
+        ))), l, r
     ), 
 
-    "DASH" <exp:Exp> => Exp::new(
+    <l:@L> "DASH" <exp:Exp> <r:@R> => Exp::new(
         Box::new(ExpKind::UnaryExp(UnaryExp::new(
-            exp,
-            UnaryExpKind::Neg
-        )))
+            exp, UnaryExpKind::Neg, l, r
+        ))), l, r
     ), 
     
     Term,
@@ -320,23 +306,29 @@ pub ActualsList = {
 
 
 pub Term: Box<Exp> = {
-    Loc                        => Exp::new(ExpKind::new(ExpKind::Loc(<>))),
-    <val:"INTLITERAL">         => Exp::new(ExpKind::new(ExpKind::IntLit(val))),
-    <string:"STRINGLITERAL">   => Exp::new(ExpKind::new(ExpKind::StrLit(string))),
-    "TRUE"                     => Exp::new(ExpKind::new(ExpKind::True)),
-    "FALSE"                    => Exp::new(ExpKind::new(ExpKind::False)),
-    "MAGIC"                    => Exp::new(ExpKind::new(ExpKind::Magic)),
-    "LPAREN" <e: Exp> "RPAREN" => e,
-    CallExp                    => Exp::new(ExpKind::new(ExpKind::CallExp(<>))),
+    <l:@L> <loc: Loc>                 <r:@R> => Exp::new(ExpKind::new(ExpKind::Loc(loc)), l, r),
+    <l:@L> <val:"INTLITERAL">         <r:@R> => Exp::new(ExpKind::new(ExpKind::IntLit(val)), l, r),
+    <l:@L> <string:"STRINGLITERAL">   <r:@R> => Exp::new(ExpKind::new(ExpKind::StrLit(string)), l, r),
+    <l:@L> "TRUE"                     <r:@R> => Exp::new(ExpKind::new(ExpKind::True), l, r),
+    <l:@L> "FALSE"                    <r:@R> => Exp::new(ExpKind::new(ExpKind::False), l, r),
+    <l:@L> "MAGIC"                    <r:@R> => Exp::new(ExpKind::new(ExpKind::Magic), l, r),
+    <l:@L> "LPAREN" <e: Exp> "RPAREN" <r:@R> => e,
+    <l:@L> <callexp: CallExp>         <r:@R> => Exp::new(ExpKind::new(ExpKind::CallExp(callexp)), l, r),
 };
 
 //loc
 pub Loc: Box<Loc> = {
-    Id => Box::new(Loc::Id(<>)),
-    <base_class:Loc> "POSTDEC" <field_name:Id> => Box::new(Loc::Loc{base_class, field_name}),
+    <l:@L> <id: Id> <r:@R> => Box::new(Loc {
+        span: Span::new(l, r), 
+        kind: Box::new(LocKind::Id(id))
+    }),
+    <l:@L> <base_class:Loc> "POSTDEC" <field_name:Id> <r:@R> => Box::new(Loc{
+        span: Span::new(l, r), 
+        kind: Box::new(LocKind::Loc{ base_class, field_name })
+    }),
 };
 
 //loc
 pub Id: Box<Id> = {
-    <l:@L> <name:"ID"> <r:@R> => Box::new(Id{name, position: Position::new(l, r)})
+    <l:@L> <name:"ID"> <r:@R> => Box::new(Id{name, span: Span::new(l, r)})
 };

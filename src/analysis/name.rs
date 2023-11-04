@@ -2,7 +2,7 @@ mod named_node;
 use named_node::NamedNode;
 
 use crate::parser::ast::*;
-use crate::parser::ast::position::{line_bytes, PositionAPI, Position};
+use crate::parser::ast::span::{line_bytes, Span, node::SpanNode};
 use crate::format::add_tabs;
 
 use std::collections::HashMap;
@@ -17,7 +17,7 @@ pub fn named_unparse(mut prog: Box<Program>, raw_input: String) -> String {
         error: false
     };
 
-    prog.correct_position_rec(&line_bytes(raw_input));
+    prog.correct_span_rec(&line_bytes(raw_input));
     let named_unparse = add_tabs(prog.named_unparse(&mut unparser));
 
     // println!("{}", unparser);
@@ -42,7 +42,7 @@ pub struct NamedUnparser {
 }
 
 impl NamedUnparser {
-    fn add_entry(&mut self, id: String, kind: SymbolKind, position: &Position) {
+    fn add_entry(&mut self, id: String, kind: SymbolKind, span: &Span) {
         let key : SymbolKey = SymbolKey {
             id: id,
             scope: self.scope,
@@ -53,7 +53,7 @@ impl NamedUnparser {
 			SymbolKind::Variable { ref var_type } => {
 				match *var_type.kind {
 					Prim(PrimType::Void) => {
-						self.report_error(NameError::BadType, position);
+						self.report_error(NameError::BadType, span);
 						error = true;
 					},
 					_ => ()
@@ -63,7 +63,7 @@ impl NamedUnparser {
 		};
 
         match self.table.entry(key.clone()) {
-            Occupied(_) => { self.report_error(NameError::MultipleDecl, position); error = true; },
+            Occupied(_) => { self.report_error(NameError::MultipleDecl, span); error = true; },
             Vacant(_) => { }
         }
 
@@ -73,21 +73,21 @@ impl NamedUnparser {
 
     }
 
-	fn report_error(&mut self, error: NameError, position: &Position) {
+	fn report_error(&mut self, error: NameError, span: &Span) {
 		match error {
-			NameError::BadType => eprintln!("FATAL {position}: Invalid type in declaration"),
-			NameError::MultipleDecl => eprintln!("FATAL {position}: Multiply declared identifier"),
-			NameError::UndefinedDecl => eprintln!("FATAL {position}: Undeclared identifier")
+			NameError::BadType => eprintln!("FATAL {span}: Invalid type in declaration"),
+			NameError::MultipleDecl => eprintln!("FATAL {span}: Multiply declared identifier"),
+			NameError::UndefinedDecl => eprintln!("FATAL {span}: Undeclared identifier")
 		}
 		self.error = true;
 	}
 
-    fn add_class_entry(&mut self, class_id: String, field_id: String, kind: SymbolKind, position: &Position) {
+    fn add_class_entry(&mut self, class_id: String, field_id: String, kind: SymbolKind, span: &Span) {
         match self.classes.entry(class_id.clone()) {
             Occupied(mut x) => {
 				let class = x.get_mut();
                 match class.entry(field_id.clone()) {
-                    Occupied(_) => self.report_error(NameError::MultipleDecl, position),
+                    Occupied(_) => self.report_error(NameError::MultipleDecl, span),
                     Vacant(_) => { class.insert(field_id, kind); }
                 }
             },
@@ -99,15 +99,15 @@ impl NamedUnparser {
         }
     }
 
-    fn add_class_instance(&mut self, class_id: String, var_id: String, position: &Position) {
+    fn add_class_instance(&mut self, class_id: String, var_id: String, span: &Span) {
         match self.classes.entry(class_id.clone()) {
             Occupied(x) => {
                 for field in x.get().clone().values() {
-                    self.add_entry( format!("{}--{}", var_id, class_id), field.clone(), position);
+                    self.add_entry( format!("{}--{}", var_id, class_id), field.clone(), span);
                 }
             },
             Vacant(_) => {
-				self.report_error(NameError::UndefinedDecl, position);
+				self.report_error(NameError::UndefinedDecl, span);
             }
         }
     }
@@ -135,7 +135,7 @@ impl NamedUnparser {
             }
         }
         
-        self.report_error(NameError::UndefinedDecl, &id.position);
+        self.report_error(NameError::UndefinedDecl, &id.span);
         Err(())
     }
 }

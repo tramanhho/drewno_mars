@@ -1,6 +1,6 @@
 pub mod display;
-pub mod position;
-use position::Position;
+pub mod span;
+use span::Span;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Program {
@@ -23,7 +23,7 @@ pub struct VarDecl {
     // pub position: Position
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct Type {
     pub perfect: bool,
     pub kind: Box<TypeKind>
@@ -37,6 +37,24 @@ impl Type {
         })
     }
 }
+
+impl PartialEq for Type {
+    fn eq(&self, other: &Self) -> bool {
+        use TypeKind::*;
+        let self_type = match *self.kind {
+            Prim(x) => x,
+            _ => PrimType::Void
+        };
+
+        let other_type = match *self.kind {
+            Prim(x) => x,
+            _ => PrimType::Void
+        };
+
+        self_type == other_type
+    }
+}
+
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TypeKind {
@@ -106,14 +124,16 @@ pub enum LineStmt {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Exp {
     pub expr_type: Option<Box<Type>>,
-    pub kind: Box<ExpKind>
+    pub kind: Box<ExpKind>,
+    pub span: Span
 }
 
 impl Exp {
-    pub fn new(kind: Box<ExpKind>) -> Box<Exp> {
+    pub fn new(kind: Box<ExpKind>, left_span: usize, right_span: usize) -> Box<Exp> {
         Box::new(Exp {
             expr_type: None,
-            kind: kind
+            kind: kind,
+            span: Span::new(left_span, right_span)
         })
     }
 }
@@ -141,13 +161,15 @@ impl ExpKind {
 pub struct UnaryExp {
     pub exp: Box<Exp>,
     pub kind: Box<UnaryExpKind>,
+    pub span: Span
 }
 
 impl UnaryExp {
-    pub fn new(exp: Box<Exp>, kind: UnaryExpKind) -> Box<UnaryExp> {
+    pub fn new(exp: Box<Exp>, kind: UnaryExpKind, left_span: usize, right_span: usize) -> Box<UnaryExp> {
         Box::new(UnaryExp {
             exp: exp,
-            kind: Box::new(kind)
+            kind: Box::new(kind),
+            span: Span::new(left_span, right_span)
         })
     }
 }
@@ -162,15 +184,17 @@ pub enum UnaryExpKind {
 pub struct BinaryExp {
     pub lhs: Box<Exp>, 
     pub rhs: Box<Exp>,
-    pub kind: Box<BinaryExpKind>
+    pub kind: Box<BinaryExpKind>,
+    pub span: Span,
 }
 
 impl BinaryExp {
-    pub fn new(lhs: Box<Exp>, rhs: Box<Exp>, kind: BinaryExpKind) -> Box<BinaryExp> {
+    pub fn new(lhs: Box<Exp>, rhs: Box<Exp>, kind: BinaryExpKind, left_span: usize, right_span: usize) -> Box<BinaryExp> {
         Box::new(BinaryExp {
             lhs: lhs,
             rhs: rhs,
-            kind: Box::new(kind)
+            kind: Box::new(kind),
+            span: Span::new(left_span, right_span)
         })
     }
 }
@@ -198,7 +222,13 @@ pub struct CallExp {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Loc {
+pub struct Loc {
+    pub span: Span,
+    pub kind: Box<LocKind>
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum LocKind {
     Id(Box<Id>),
     Loc { base_class: Box<Loc>, field_name: Box<Id> }
 }
@@ -206,5 +236,5 @@ pub enum Loc {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Id {
     pub name: String,
-    pub position: Position
+    pub span: Span
 }
