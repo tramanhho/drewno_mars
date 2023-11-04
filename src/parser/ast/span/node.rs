@@ -27,6 +27,10 @@ impl SpanNode for Decl {
 impl SpanNode for VarDecl {
 	fn correct_span_rec(&mut self, line_bytes: &Vec<usize>) {
 		self.id.correct_span_rec(line_bytes);
+		match self.init_val {
+			Some(ref mut init_val) => init_val.correct_span_rec(line_bytes),
+			None => ()
+		}
 	}
 }
 
@@ -106,7 +110,14 @@ impl SpanNode for BlockStmt {
 
 impl SpanNode for LineStmt {
 	fn correct_span_rec(&mut self, line_bytes: &Vec<usize>) {
-		use LineStmt::*;
+		self.span.correct(line_bytes);
+		self.kind.correct_span_rec(line_bytes);
+	} 
+}
+
+impl SpanNode for LineStmtKind {
+	fn correct_span_rec(&mut  self, line_bytes: &Vec<usize>) {
+		use LineStmtKind::*;
 
 		match self {
             Assign{dest, src} => {
@@ -123,7 +134,7 @@ impl SpanNode for LineStmt {
             Exit => (),
             Call(exp) => exp.correct_span_rec(line_bytes),
         }
-	}
+	} 
 }
 
 impl SpanNode for Exp {
@@ -168,6 +179,7 @@ impl SpanNode for BinaryExp {
 
 impl SpanNode for CallExp {
     fn correct_span_rec(&mut self, line_bytes: &Vec<usize>) {
+		self.span.correct(line_bytes);
 		self.name.correct_span_rec(line_bytes);
 		for arg in self.args.iter_mut() {
 			arg.correct_span_rec(line_bytes);

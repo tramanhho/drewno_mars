@@ -139,37 +139,39 @@ mod tests {
 			Test { //diff row/col
 				a: Position::test_new(5,  15), 
 				b: Position::test_new(7,  14),
-				result: Ordering::Greater
+				result: Ordering::Less
 			},
 			Test { //same row, diff col
 				a: Position::test_new(10,  9), 
 				b: Position::test_new(10,  11),
-				result: Ordering::Greater
+				result: Ordering::Less
 			},
 			Test { //same row, diff col
 				a: Position::test_new(5,  1), 
 				b: Position::test_new(5,  7),
-				result: Ordering::Greater
+				result: Ordering::Less
 			},
 			Test { //diff row, same col
 				a: Position::test_new(1,  2), 
 				b: Position::test_new(8,  2),
-				result: Ordering::Greater
+				result: Ordering::Less
 			},
 			Test { //diff row, same col
 				a: Position::test_new(15,  7), 
 				b: Position::test_new(17,  7),
-				result: Ordering::Greater
+				result: Ordering::Less
 			},
 			Test { //same row/col
 				a: Position::test_new(14,  1), 
 				b: Position::test_new(14,  1),
-				result: Ordering::Greater
+				result: Ordering::Equal
 			},
 		];
 
 		for test in vecs {
-			assert_eq!(test.a.cmp(&test.b), test.result);
+			assert_eq!(test.a.cmp(&test.b), test.result,
+			"The test failed for {} and {}", test.a, test.b 
+		);
 		}
 	}
 }

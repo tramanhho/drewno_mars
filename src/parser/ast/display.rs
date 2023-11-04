@@ -57,6 +57,7 @@ impl Display for PrimType {
             Int => write!(fmt, "int"),
             Bool => write!(fmt, "bool"),
             Void => write!(fmt, "void"),
+            _ => Ok(())
         }   
     }
 }
@@ -107,7 +108,13 @@ impl Display for BlockStmt {
 
 impl Display for LineStmt {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-        use LineStmt::*;
+        write!(fmt, "{}", self.kind)
+    }
+}
+
+impl Display for LineStmtKind {
+    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+        use LineStmtKind::*;
         match self {
             Assign{dest, src} => write!(fmt, "{} = {}", dest, src),
             PostDec{loc} => write!(fmt, "{}--", loc),

@@ -6,29 +6,28 @@ use crate::parser::ast::span::Span;
 mod type_node;
 use type_node::*;
 
-pub fn type_error_check(mut prog: Box<Program>) -> Result<(), ()> {
+pub fn type_error_check(mut prog: Box<Program>)  {
     let mut analyzer: TypeAnalyzer = TypeAnalyzer {
         functions: HashMap::new(),
         classes: HashMap::new(),
 		error: false
     };
 
-	println!("uwo?");
     prog.analyze_type(&mut analyzer);
-	println!("owo?");
     if analyzer.error {
         eprintln!("Type Analysis Failed");
     } 
     
-	Ok(())
 }
 
+#[derive(Clone)]
 pub struct TypeAnalyzer {
 	functions: HashMap<String, FunctionKind>,
 	classes: HashMap<String, Vec<Type>>,
 	error: bool
 }
 
+#[derive(Clone)]
 pub struct FunctionKind {
 	arg_types: Vec<Type>,
 	return_type: Type,
@@ -73,11 +72,47 @@ impl TypeAnalyzer {
 				_ => ()
 			}
 		}
-
 		self.classes.insert(class.id.to_string(), field_types);
 	}
 
-	fn report_error(&mut self, err: ErrorType, span: Span) {
+	pub fn get_fn(&self, fn_name: &String) -> Result<&FunctionKind, ()> {
+		match self.functions.get(fn_name) {
+			Some(x) => Ok(&x),
+			None => Err(())
+		}
+	}
+
+	pub fn get_fn_return_type(&self, fn_name: &String) -> Result<&Type, ()> {
+		match self.functions.get(fn_name) {
+			Some(x) => Ok(&x.return_type),
+			None => Err(())
+		}
+	}
+
+	pub fn get_fn_arg_types(&self, fn_name: &String) -> Result<&Vec<Type>, ()> {
+		match self.functions.get(fn_name) {
+			Some(x) => Ok(&x.arg_types),
+			None => Err(())
+		}
+	}
+
+	pub fn has_fn(&self, name: &String) -> bool {
+		if self.functions.get(name).is_some()  {
+			true
+		} else {
+			false
+		}
+	}
+
+	pub fn has_class(&self, name: &String) -> bool {
+		if self.classes.get(name).is_some() {
+			true
+		} else {
+			false
+		}
+	}
+
+	fn report_error(&mut self, err: &ErrorType, span: &Span) {
 		self.error = true;
 		use self::ErrorType::*;
 

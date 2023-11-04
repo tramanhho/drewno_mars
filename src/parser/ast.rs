@@ -46,11 +46,10 @@ impl PartialEq for Type {
             _ => PrimType::Void
         };
 
-        let other_type = match *self.kind {
+        let other_type = match *other.kind {
             Prim(x) => x,
             _ => PrimType::Void
         };
-
         self_type == other_type
     }
 }
@@ -67,6 +66,7 @@ pub enum PrimType {
     Bool,
     Int,
     Void,
+    String,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -110,7 +110,22 @@ pub enum BlockStmt {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum LineStmt {
+pub struct LineStmt {
+    pub kind: Box<LineStmtKind>,
+    pub span: Span,
+}
+
+impl LineStmt {
+    pub fn new(kind: LineStmtKind, l: usize, r: usize) -> Box<LineStmt> {
+        Box::new(LineStmt { 
+            kind: Box::new(kind), 
+            span: Span::new(l, r)
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum LineStmtKind {
     Assign { dest: Box<Loc>, src: Box<Exp> },
     PostDec{ loc: Box<Loc>},
     PostInc{ loc: Box<Loc>},
@@ -132,7 +147,20 @@ impl Exp {
     pub fn new(kind: Box<ExpKind>, left_span: usize, right_span: usize) -> Box<Exp> {
         Box::new(Exp {
             expr_type: None,
-            kind: kind,
+            kind,
+            span: Span::new(left_span, right_span)
+        })
+    }
+}
+
+impl Exp {
+    pub fn new_with_type(kind: Box<ExpKind>, expr_type: PrimType, left_span: usize, right_span: usize) -> Box<Exp> {
+        Box::new(Exp {
+            expr_type: Some(Box::new(Type{ 
+                perfect: false, 
+                kind: Box::new(TypeKind::Prim(expr_type))
+            })),
+            kind,
             span: Span::new(left_span, right_span)
         })
     }
@@ -161,6 +189,7 @@ impl ExpKind {
 pub struct UnaryExp {
     pub exp: Box<Exp>,
     pub kind: Box<UnaryExpKind>,
+    pub expr_type: Option<Box<Type>>,
     pub span: Span
 }
 
@@ -169,6 +198,7 @@ impl UnaryExp {
         Box::new(UnaryExp {
             exp: exp,
             kind: Box::new(kind),
+            expr_type: None,
             span: Span::new(left_span, right_span)
         })
     }
@@ -185,6 +215,7 @@ pub struct BinaryExp {
     pub lhs: Box<Exp>, 
     pub rhs: Box<Exp>,
     pub kind: Box<BinaryExpKind>,
+    pub expr_type: Option<Box<Type>>,
     pub span: Span,
 }
 
@@ -194,6 +225,7 @@ impl BinaryExp {
             lhs: lhs,
             rhs: rhs,
             kind: Box::new(kind),
+            expr_type: None,
             span: Span::new(left_span, right_span)
         })
     }
@@ -218,7 +250,9 @@ pub enum BinaryExpKind {
 #[derive(Debug, Clone, PartialEq)]
 pub struct CallExp {
     pub name: Box<Loc>, 
-    pub args: Vec<Box<Exp>>
+    pub args: Vec<Box<Exp>>,
+    pub fn_type: Option<Type>,
+    pub span: Span
 }
 
 #[derive(Debug, Clone, PartialEq)]

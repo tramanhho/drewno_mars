@@ -239,8 +239,9 @@ impl NamedNode for BlockStmt {
 
 impl NamedNode for LineStmt {
     fn named_unparse(&self, unparser: &mut NamedUnparser) -> String {
-        use LineStmt::*;
-        match self {
+        use LineStmtKind::*;
+        let variant = *self.kind.clone();
+        match variant {
             Assign{dest, src} => format!("{} = {}", dest.named_unparse(unparser), src.named_unparse(unparser)),
             PostDec{loc} => format!("{}--", loc.named_unparse(unparser)),
             PostInc{loc} => format!("{}++", loc.named_unparse(unparser)),

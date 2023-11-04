@@ -165,7 +165,7 @@ pub fn run(config: Config) {
         ProcessMode::TypeCheck => {
             let lexer = Lexer::new(&input[..]);
             match ProgramParser::new().parse(lexer) {
-                Ok(x) => { type_error_check(x); },
+                Ok(mut x) => { x.correct_span_rec(&line_bytes(input)); type_error_check(x); },
                 Err(x) => { eprintln!("Parse failed: {:?}", x); },
             };
         },

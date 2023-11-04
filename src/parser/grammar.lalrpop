@@ -174,15 +174,17 @@ pub BlockStmt: Box<BlockStmt> = {
 }
 
 pub LineStmt: Box<LineStmt> = {
-    <dest:Loc> "ASSIGN" <src:Exp> => Box::new(LineStmt::Assign{dest, src}),
-    <loc:Loc> "POSTDEC"           => Box::new(LineStmt::PostDec{loc}),
-    <loc:Loc> "POSTINC"           => Box::new(LineStmt::PostInc{loc}),
-    "GIVE" <output:Exp>           => Box::new(LineStmt::Give{output}),
-    "TAKE" <recipient:Loc>        => Box::new(LineStmt::Take{recipient}),
-    "RETURN" <result:Exp>         => Box::new(LineStmt::Return{result: Some(result)}),
-    "RETURN"                      => Box::new(LineStmt::Return{result: None}),
-    "EXIT"                        => Box::new(LineStmt::Exit),
-    CallExp                       => Box::new(LineStmt::Call(<>)),
+    // use LineStmtKind::*;
+
+    <l:@L> <dest:Loc> "ASSIGN" <src:Exp> <r:@R> => LineStmt::new(LineStmtKind::Assign{dest, src}, l, r),
+    <l:@L> <loc:Loc> "POSTDEC" <r:@R>           => LineStmt::new(LineStmtKind::PostDec{loc}, l, r),
+    <l:@L> <loc:Loc> "POSTINC" <r:@R>           => LineStmt::new(LineStmtKind::PostInc{loc}, l, r),
+    <l:@L> "GIVE" <output:Exp> <r:@R>           => LineStmt::new(LineStmtKind::Give{output}, l, r),
+    <l:@L> "TAKE" <recipient:Loc> <r:@R>        => LineStmt::new(LineStmtKind::Take{recipient}, l, r),
+    <l:@L> "RETURN" <result:Exp> <r:@R>         => LineStmt::new(LineStmtKind::Return{result: Some(result)}, l, r),
+    <l:@L> "RETURN" <r:@R>                      => LineStmt::new(LineStmtKind::Return{result: None}, l, r),
+    <l:@L> "EXIT" <r:@R>                        => LineStmt::new(LineStmtKind::Exit, l, r),
+    <l:@L> <fn_call: CallExp> <r:@R>            => LineStmt::new(LineStmtKind::Call(fn_call), l, r),
 }
 
 pub Exp: Box<Exp> = {
@@ -292,10 +294,12 @@ pub BabyExp: Box<Exp> = {
 };
 
 pub CallExp: Box<CallExp> = {
-    <name:Loc> "LPAREN" <args:ActualsList> "RPAREN" => Box::new(
+    <l:@L> <name:Loc> "LPAREN" <args:ActualsList> "RPAREN" <r:@R> => Box::new(
         CallExp {
             name,
-            args: args
+            args: args,
+            fn_type: None,
+            span: Span::new(l, r) 
         }
     ),
 };
@@ -307,12 +311,12 @@ pub ActualsList = {
 
 pub Term: Box<Exp> = {
     <l:@L> <loc: Loc>                 <r:@R> => Exp::new(ExpKind::new(ExpKind::Loc(loc)), l, r),
-    <l:@L> <val:"INTLITERAL">         <r:@R> => Exp::new(ExpKind::new(ExpKind::IntLit(val)), l, r),
-    <l:@L> <string:"STRINGLITERAL">   <r:@R> => Exp::new(ExpKind::new(ExpKind::StrLit(string)), l, r),
-    <l:@L> "TRUE"                     <r:@R> => Exp::new(ExpKind::new(ExpKind::True), l, r),
-    <l:@L> "FALSE"                    <r:@R> => Exp::new(ExpKind::new(ExpKind::False), l, r),
-    <l:@L> "MAGIC"                    <r:@R> => Exp::new(ExpKind::new(ExpKind::Magic), l, r),
-    <l:@L> "LPAREN" <e: Exp> "RPAREN" <r:@R> => e,
+    <l:@L> <val:"INTLITERAL">         <r:@R> => Exp::new_with_type(ExpKind::new(ExpKind::IntLit(val)), PrimType::Int, l, r),
+    <l:@L> <string:"STRINGLITERAL">   <r:@R> => Exp::new_with_type(ExpKind::new(ExpKind::StrLit(string)), PrimType::String, l, r),
+    <l:@L> "TRUE"                     <r:@R> => Exp::new_with_type(ExpKind::new(ExpKind::True), PrimType::Bool, l, r),
+    <l:@L> "FALSE"                    <r:@R> => Exp::new_with_type(ExpKind::new(ExpKind::False), PrimType::Bool, l, r),
+    <l:@L> "MAGIC"                    <r:@R> => Exp::new_with_type(ExpKind::new(ExpKind::Magic), PrimType::Bool, l, r),
+    "LPAREN" <e: Exp> "RPAREN"               => e,
     <l:@L> <callexp: CallExp>         <r:@R> => Exp::new(ExpKind::new(ExpKind::CallExp(callexp)), l, r),
 };
 

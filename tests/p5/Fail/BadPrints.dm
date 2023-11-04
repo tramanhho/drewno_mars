@@ -1,3 +1,7 @@
+test : () void {
+    return 43;
+}
+
 main : () void {
-    give 1;
+    give test;
 }
