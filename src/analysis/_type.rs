@@ -96,6 +96,10 @@ impl Display for Field {
     }
 }
 
+// fn print_field_vec(vec: &Vec<Field>) {
+// 	println!("field vec: {}", vec.iter().map(|f| f.to_string()).collect::<Vec::<String>>().join(", "));
+// }
+
 impl TypeAnalyzer {
     pub fn add_var(&mut self, id: String, var_type: Type) {
 		let key = VarKey {
@@ -161,18 +165,65 @@ impl TypeAnalyzer {
 			use crate::parser::ast::Decl::*;
 			let field = *field.clone();
 			match field {
-				VarDecl(x) => {
-                    let var_field = Field {
-                        id: format!("{}--{}", class.id.to_string(), x.id.to_string()),
-                        field_type: *x.var_type.clone()
-                    };
-                    fields.push(var_field)
+				VarDecl(var_decl) => {
+					use TypeKind::*;
+					match *var_decl.var_type.kind.clone() {
+						Prim(_) => {
+							let var_field = Field {
+								id: var_decl.id.to_string(),
+								field_type: *var_decl.var_type
+							};
+							fields.push(var_field)
+						}
+						Class(inner_class) => {
+							let fields_vec = self.add_class_helper(
+								&var_decl.id.to_string(),
+								&inner_class.to_string(), 
+								Vec::new());
+							for field in fields_vec.into_iter() {
+								fields.push(field.clone());
+							}
+						}
+					}
+                    
                 },
-				FnDecl(mut x) => self.add_class_fn(class.id.to_string(), &mut x),
+				FnDecl(mut fn_decl) => self.add_class_fn(class.id.to_string(), &mut fn_decl),
 				_ => ()
 			}
 		}
 		self.classes.insert(class.id.to_string(), fields);
+	}
+
+	fn add_class_helper(&mut self, outer_class_field_name: &String, inner_class_search_key: &String, mut curr_fields: Vec<Field>) -> Vec<Field> {
+		//println!("for {}, searching {}...", outer_class_field_name, inner_class_search_key);
+		// print_field_vec(&curr_fields);
+		let search = self.clone();
+		let field_refs = match search.classes.get(inner_class_search_key) {
+            Some(field_vec) => field_vec,
+            None => return curr_fields
+        };
+		for field in field_refs.iter() {
+			//println!("{}", field);
+			use TypeKind::*;
+			match *field.field_type.kind.clone() {
+				Prim(_) => {
+					let curr = Field {
+						id: format!("{}--{}", outer_class_field_name, field.id),
+						field_type: field.field_type.clone()
+					};
+					curr_fields.push(curr);
+				},
+				Class(class) => {
+					curr_fields = self.add_class_helper(
+						&field.id, 
+						&class.to_string(), 
+						curr_fields
+					);
+				}
+			};
+		}
+		// print_field_vec(&curr_fields);
+		curr_fields
 	}
 
 	pub fn get_fn(&self, fn_name: &String) -> Result<&FunctionKind, ()> {
@@ -192,10 +243,7 @@ impl TypeAnalyzer {
             });
         }
 
-        // println!("{}", &self);
-        // println!("{:?}", &key_check);
         for key in key_check.into_iter() {
-            // println!("{}", key);
             match self.vars.clone().get(&key) {
                 Some(kind) => {
                     return Ok(kind.clone()); 
@@ -208,7 +256,6 @@ impl TypeAnalyzer {
 	}
 
 	pub fn has_fn(&self, name: &String) -> bool {
-        // println!();
 		if self.functions.get(name).is_some()  {
 			true
 		} else {

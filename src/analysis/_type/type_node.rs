@@ -34,7 +34,6 @@ impl TypeAnalysisNode for Decl {
 	}
 }
 
-//TODO: this
 impl TypeAnalysisNode for ClassDecl {
 	fn analyze_type(&mut self, analyzer: &mut TypeAnalyzer) {	
 		analyzer.add_class(self);
@@ -67,7 +66,6 @@ impl TypeAnalysisNode for FnDecl {
 
 impl TypeAnalysisNode for VarDecl {
 	fn analyze_type(&mut self, analyzer: &mut TypeAnalyzer) {
-        // println!("{}", analyzer);
         use TypeKind::*;
 
 		match self.init_val {
@@ -98,7 +96,6 @@ impl TypeAnalysisNode for VarDecl {
             Class(class) => analyzer.add_class_inst(self.id.to_string(), class.name),
             _ => analyzer.add_var(self.id.to_string(), *self.var_type.clone()),
         };
-        
         // println!("{}", analyzer);
 	}
 }
@@ -366,11 +363,9 @@ impl EvaluateExpType for UnaryExp {
 impl EvaluateExpType for BinaryExp {
     fn eval_type(&mut self, analyzer: &mut TypeAnalyzer) -> Result<Type, ()> {
 		use BinaryExpKind::*;
-        // println!("{}", self);
 		self.lhs.analyze_type(analyzer);
 		self.rhs.analyze_type(analyzer);
-        // println!("{}, {}", self.lhs, self.rhs);
-        // println!("{:?}, {:?}", self.lhs.expr_type, self.rhs.expr_type);
+
 		let lhs_type = match &self.lhs.expr_type {
 			Some(x) => Some(*x.clone()),
 			None => None
@@ -410,18 +405,13 @@ impl EvaluateExpType for BinaryExp {
 					PrimType::Int, WrongOpCmp, analyzer
 				)
 			},
-			//TODO: this
 			Equals | NotEquals  => {
-                // println!("{}=?{}", self.lhs, self.rhs);
-                // println!("{}", analyzer);
                 let mut invalid_operands = false;
-                // println!("NYAOOOOOOOOOOOW????1");
                 
                 if self.lhs.is_fn_or_class(analyzer) {
                     analyzer.report_error(&BadEqualityOne, &self.lhs.span);
                     invalid_operands = true;
                 }
-                // println!("NYAOOOOOOOOOOOW????2");
                 if self.rhs.is_fn_or_class(analyzer) {
                     analyzer.report_error(&BadEqualityOne, &self.rhs.span);
                     invalid_operands = true;
@@ -438,13 +428,11 @@ impl EvaluateExpType for BinaryExp {
                     analyzer.report_error(&BadEqualityOne, &self.rhs.span);
                     invalid_operands = true;
                 }
-                // println!("NYAOOOOOOOOOOOW????3");
                 
                 if invalid_operands {
                     return Err(());
                 }
 
-                // println!("{}, {}", lhs_type_kind, rhs_type_kind);
                 
                 if lhs_type_kind != rhs_type_kind {
                     analyzer.report_error(&BadEqualityTwo, &self.span);
@@ -457,10 +445,6 @@ impl EvaluateExpType for BinaryExp {
                 } else {
                     return Err(())
                 }
-                // match lhs_type.clone() {
-                //     Some(x) => Ok(x),
-                //     None => Err(())
-                // }
 			},
 		}
 	}
@@ -469,10 +453,8 @@ impl EvaluateExpType for BinaryExp {
 impl Exp {
     fn is_fn_or_class(&self, analyzer: &mut TypeAnalyzer) -> bool {
         use ExpKind::*;
-        // println!("{:?}", &self.kind);
         match *self.kind.clone() {
             Loc(location) => {
-                // println!("{}, {}", analyzer.has_class(&location.to_string()), analyzer.has_fn(&location.to_string()));
                 analyzer.has_class(&location.to_string()) ||
                 analyzer.has_fn(&location.to_string()) 
             }
@@ -522,7 +504,6 @@ impl BinaryExp {
 
 impl EvaluateExpType for CallExp {
     fn eval_type(&mut self, analyzer: &mut TypeAnalyzer) -> Result<Type, ()> {
-		//TODO: this
 		let binding = analyzer.clone();
 		let func = binding.get_fn(&self.name.to_string());
 		
@@ -540,12 +521,8 @@ impl EvaluateExpType for CallExp {
 		} else {
 			self.args.len()
 		};
-        // println!("{}", analyzer);
 		for i in 0..arg_num {
 			self.args[i].analyze_type(analyzer);
-            // println!("{:?}, {}", &self.args[i].expr_type, &func.arg_types[i]);
-            // println!("{}", self.args[i]);
-            // println!("{:?}, {}", self.args[i].expr_type.clone(), &func.arg_types[i]);
 			match self.args[i].expr_type.clone() {
 				Some(actual) => {
 					if *actual != func.arg_types[i] {
@@ -568,16 +545,7 @@ impl EvaluateExpType for CallExp {
 
 impl EvaluateExpType for Loc {
     fn eval_type(&mut self, analyzer: &mut TypeAnalyzer) -> Result<Type, ()> {
-        use LocKind::*;
-        
-        let my_type = match *self.kind.clone() {
-            Loc {ref mut base_class, ref mut field_name } => {
-                base_class.eval_type_rec(analyzer, field_name.to_string())
-            },
-            Id(x) => analyzer.get_var_type(x.to_string())
-        };
-		// println!("NYAOW \n{}, {:?}\n", &self.kind, &my_type);
-        // println!("{}\n", analyzer);
+		let my_type = analyzer.get_var_type(self.to_string());
         match my_type.clone() {
             Ok(x) => self.loc_type = Some(x),
             Err(()) => ()
@@ -585,41 +553,3 @@ impl EvaluateExpType for Loc {
         my_type
 	}
 }
-
-impl Loc {
-    fn eval_type_rec(&mut self, analyzer: &mut TypeAnalyzer, current_id: String) -> Result<Type, ()> {
-        use LocKind::*;
-        let my_type = match *self.kind.clone() {
-            Loc {ref mut base_class, ref mut field_name } => {
-                base_class.eval_type_rec(analyzer, format!("{}--{}", current_id, field_name.to_string()))
-            },
-            Id(x) => analyzer.get_var_type(format!("{}--{}", current_id, x.to_string()))
-        };
-
-        match my_type.clone() {
-            Ok(x) => self.loc_type = Some(x),
-            Err(()) => ()
-        };
-
-        my_type
-	}
-}
-
-// impl EvaluateExpType for Id {
-//     fn eval_type(&mut self, analyzer: &mut TypeAnalyzer) -> Result<Type, ()> {
-//         use LocKind::*;
-//         let my_type = match *self.kind {
-//             Loc {ref mut base_class, ref mut field_name } => {
-//                 base_class.eval_type_rec(analyzer, field_name.to_string())
-//             },
-//             Id(x) => analyzer.get_var_type(x.to_string())
-//         };
-		
-//         match my_type {
-//             Ok(x) => self.loc_type = Some(x),
-//             Err(()) => ()
-//         };
-
-//         my_type
-// 	}
-// }
