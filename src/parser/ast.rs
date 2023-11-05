@@ -258,7 +258,8 @@ pub struct CallExp {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Loc {
     pub span: Span,
-    pub kind: Box<LocKind>
+    pub loc_type: Option<Type>,
+    pub kind: Box<LocKind>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -270,5 +271,6 @@ pub enum LocKind {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Id {
     pub name: String,
-    pub span: Span
+    pub span: Span,
+    pub id_type: Option<Type>,
 }

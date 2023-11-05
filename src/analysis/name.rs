@@ -99,18 +99,18 @@ impl NamedUnparser {
         }
     }
 
-    fn add_class_instance(&mut self, class_id: String, var_id: String, span: &Span) {
-        match self.classes.entry(class_id.clone()) {
-            Occupied(x) => {
-                for field in x.get().clone().values() {
-                    self.add_entry( format!("{}--{}", var_id, class_id), field.clone(), span);
-                }
-            },
-            Vacant(_) => {
-				self.report_error(NameError::UndefinedDecl, span);
-            }
-        }
-    }
+    // fn add_class_instance(&mut self, class_id: String, var_id: String, span: &Span) {
+    //     match self.classes.entry(class_id.clone()) {
+    //         Occupied(x) => {
+    //             for field in x.get().clone().values() {
+    //                 self.add_entry( format!("{}--{}", var_id, class_id), field.clone(), span);
+    //             }
+    //         },
+    //         Vacant(_) => {
+	// 			self.report_error(NameError::UndefinedDecl, span);
+    //         }
+    //     }
+    // }
 
 	fn remove_scope(&mut self, scope: usize) {
         self.table.retain(|k, _| k.scope != scope);
@@ -119,7 +119,7 @@ impl NamedUnparser {
     fn find_entry(&mut self, id: &Id) -> Result<SymbolKind, ()> {
         let mut key_check: Vec<SymbolKey> = Vec::new();
 
-        for s in (0..self.scope).rev() {
+        for s in (0..=self.scope).rev() {
             key_check.push(SymbolKey {
                 id: id.to_string(),
                 scope: s

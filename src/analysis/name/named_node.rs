@@ -336,7 +336,7 @@ impl Loc {
         // use LocKind::*;
         match *self.kind.clone() {
             LocKind::Id(x) => {
-                let (output, _unparser) = get_id_named_string(Loc {span: self.span, kind: Box::new(LocKind::Id(x))}, unparser);
+                let (output, _unparser) = get_id_named_string(Loc {span: self.span, loc_type: None, kind: Box::new(LocKind::Id(x))}, unparser);
                 output
             },
             LocKind::Loc { ref base_class , ref field_name} => {

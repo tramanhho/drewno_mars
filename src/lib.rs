@@ -131,7 +131,7 @@ pub fn run(config: Config) {
             match ProgramParser::new().parse(lexer) {
                 Ok(mut x) => {
                     x.correct_span_rec(&line_bytes(input));
-                    println!("{:?}", x);
+                    // println!("{:?}", x);
                 },
                 Err(_) => { eprintln!("syntax error\nParse failed"); },
             };

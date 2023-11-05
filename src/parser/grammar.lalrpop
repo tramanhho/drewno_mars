@@ -324,15 +324,21 @@ pub Term: Box<Exp> = {
 pub Loc: Box<Loc> = {
     <l:@L> <id: Id> <r:@R> => Box::new(Loc {
         span: Span::new(l, r), 
+        loc_type: None,
         kind: Box::new(LocKind::Id(id))
     }),
     <l:@L> <base_class:Loc> "POSTDEC" <field_name:Id> <r:@R> => Box::new(Loc{
         span: Span::new(l, r), 
+        loc_type: None,
         kind: Box::new(LocKind::Loc{ base_class, field_name })
     }),
 };
 
 //loc
 pub Id: Box<Id> = {
-    <l:@L> <name:"ID"> <r:@R> => Box::new(Id{name, span: Span::new(l, r)})
+    <l:@L> <name:"ID"> <r:@R> => Box::new(Id{
+        name,
+        id_type: None,
+        span: Span::new(l, r)
+    })
 };

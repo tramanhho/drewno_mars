@@ -7,7 +7,7 @@ pub trait TypeAnalysisNode {
 }
 
 pub trait TypeAnalysisStmtNode {
-    fn analyze_type(&mut self, analyzer: &mut TypeAnalyzer, return_type: TypeKind);
+    fn analyze_type(&mut self, analyzer: &mut TypeAnalyzer, return_type: &TypeKind);
 }
 
 pub trait EvaluateExpType {
@@ -41,41 +41,79 @@ impl TypeAnalysisNode for ClassDecl {
 	}
 }
 
-//TODO: this
 impl TypeAnalysisNode for FnDecl {
 	fn analyze_type(&mut self, analyzer: &mut TypeAnalyzer) {
 		analyzer.add_fn(self);
 
-		for stmt in self.body.iter_mut() {
-			stmt.analyze_type(analyzer, *self.ret.kind.clone());
+        let return_type = *self.ret.kind.clone();
+        analyzer.scope += 1;
+
+        use self::FormalDecl::*;
+        for arg in self.args.iter() {
+			let (id, var_type) = match *arg.clone() {
+                VarDecl(x) => (x.id, x.var_type),
+                FormalDecl { id, formal_type } => (id, formal_type)
+            };
+            analyzer.add_var(id.to_string(), *var_type.clone());
 		}
+
+		for stmt in self.body.iter_mut() {
+			stmt.analyze_type(analyzer, &return_type);
+		}
+        analyzer.remove_scope();
+        analyzer.scope -= 1;
 	}
 }
 
-//TODO: this
 impl TypeAnalysisNode for VarDecl {
 	fn analyze_type(&mut self, analyzer: &mut TypeAnalyzer) {
-		let init = match self.init_val {
-			Some(ref mut x) => { x.analyze_type(analyzer); x },
-			None => return,
-		};
-		match &init.expr_type {
-			Some(expr_type) => {
-				if *expr_type != self.var_type {
-					analyzer.report_error(&BadAssign, &init.span);
+        // println!("{}", analyzer);
+        use TypeKind::*;
+
+		match self.init_val {
+			Some(ref mut init) => { 
+                init.analyze_type(analyzer); 
+                if self.var_type.perfect == true {
+					analyzer.report_error(&NonLval, &self.id.span);
 				}
-			},
-			None => ()
-		}
+
+                match *self.var_type.kind.clone() {
+                    Class(_) => analyzer.report_error(&BadAssignOne, &self.id.span),
+                    _ => ()
+                }
+
+                match &init.expr_type {
+                    Some(expr_type) => {
+                        if *expr_type != self.var_type {
+                            analyzer.report_error(&BadAssignOne, &init.span);
+                        }
+                    },
+                    None => ()
+                };
+            },
+			None => (),
+		};
+
+        match *self.var_type.kind.clone() {
+            Class(class) => analyzer.add_class_inst(self.id.to_string(), class.name),
+            _ => analyzer.add_var(self.id.to_string(), *self.var_type.clone()),
+        };
+        
+        // println!("{}", analyzer);
 	}
 }
 
 impl TypeAnalysisStmtNode for Stmt {
-	fn analyze_type(&mut self, analyzer: &mut TypeAnalyzer, return_type: TypeKind) {
+	fn analyze_type(&mut self, analyzer: &mut TypeAnalyzer, return_type: &TypeKind) {
 		use Stmt::*;
 
 		match self {
-			Block(x) => x.analyze_type(analyzer, return_type),
+			Block(x) => {
+                analyzer.scope += 1;
+                x.analyze_type(analyzer, return_type);
+                analyzer.remove_scope();
+                analyzer.scope -= 1;
+            },
 			Line(x) => x.analyze_type(analyzer, return_type),
 			VarDecl(x) => x.analyze_type(analyzer),
 		}
@@ -83,13 +121,64 @@ impl TypeAnalysisStmtNode for Stmt {
 }
 
 impl TypeAnalysisStmtNode for BlockStmt {
-	fn analyze_type(&mut self, analyzer: &mut TypeAnalyzer, return_type: TypeKind) {
-		
+	fn analyze_type(&mut self, analyzer: &mut TypeAnalyzer, return_type: &TypeKind) {
+		use BlockStmt::*;
+
+		match self {
+			While {ref mut cond, ref mut body} | 
+            If{ref mut cond, ref mut body} => {
+                cond.analyze_type(analyzer);
+                // println!("{}", cond);
+                match is_condition_bool(cond) {
+                    Ok(cond_is_bool) => {
+                        if !cond_is_bool {
+                            analyzer.report_error(&CondNonBool, &cond.span);
+                        } 
+                    }
+                    Err(()) => ()
+                }
+
+                for stmt in body.iter_mut() {
+                    stmt.analyze_type(analyzer, return_type);
+                }
+            },
+			IfElse{ref mut cond, ref mut true_branch, ref mut false_branch, } => {
+                cond.analyze_type(analyzer);
+                match is_condition_bool(cond) {
+                    Ok(cond_is_bool) => {
+                        if !cond_is_bool {
+                            analyzer.report_error(&CondNonBool, &cond.span);
+                        } 
+                    }
+                    Err(()) => ()
+                }
+
+                for stmt in true_branch.iter_mut() {
+                    stmt.analyze_type(analyzer, return_type);
+                }
+                for stmt in false_branch.iter_mut() {
+                    stmt.analyze_type(analyzer, return_type);
+                }
+            },
+		}
 	}
 }
 
+fn is_condition_bool(cond: &mut Box<Exp>) -> Result<bool, ()> {
+    use TypeKind::*;
+    match cond.expr_type.clone() {
+        Some(expr_type) => {
+            match *expr_type.kind {
+                Prim(PrimType::Bool) => Ok(true),
+                _ => Ok(false)
+            }
+        },
+        None => Err(())
+    }
+}
+
 impl TypeAnalysisStmtNode for LineStmt {
-	fn analyze_type(&mut self, analyzer: &mut TypeAnalyzer, parent_fn_return_type: TypeKind) {
+	fn analyze_type(&mut self, analyzer: &mut TypeAnalyzer, parent_fn_return_type: &TypeKind) {
 		let mut variation = *self.kind.clone();
 
 		use LineStmtKind::*;
@@ -97,13 +186,47 @@ impl TypeAnalysisStmtNode for LineStmt {
 		use ExpKind::*;
 		match variation {
 			Assign { ref mut dest, ref mut src } => {
+                
 				let dest_type = dest.eval_type(analyzer);
 				src.analyze_type(analyzer);
-				let src_type = &src.expr_type;
-				if dest_type.is_err() || src_type.is_none() {
+				let src_type: &Option<Box<Type>> = &src.expr_type;
+
+                let mut invalid_operators = false;
+                if dest.is_fn_or_class(analyzer) {
+                    analyzer.report_error(&BadAssignOne, &dest.span);
+                    invalid_operators = true;
+                }
+
+                if src.is_fn_or_class(analyzer){
+                    analyzer.report_error(&BadAssignOne, &src.span);
+                    invalid_operators = true;
+                }
+
+                if dest_type.is_err() || src_type.is_none() {
 					return;
 				}
-				//TODO: do the rest of the assign
+
+                let dest_type = dest_type.unwrap();
+                let src_type = *src_type.clone().unwrap();
+
+                if dest_type.perfect == true {
+                    analyzer.report_error(&NonLval, &dest.span);
+                    invalid_operators = true;
+                }
+
+                if src_type.perfect == true {
+                    analyzer.report_error(&NonLval, &src.span);
+                    invalid_operators = true;
+                }
+
+                if invalid_operators {
+                    return;
+                }
+
+                if dest_type != src_type {
+                    analyzer.report_error(&BadAssignTwo, &self.span);
+                }
+				
 			},
 			PostDec{ ref mut loc } | PostInc{ ref mut loc} => {
 				let loc_type = loc.eval_type(analyzer);
@@ -149,23 +272,28 @@ impl TypeAnalysisStmtNode for LineStmt {
 				}
 			},
 			Return { ref mut result} => {
+                
 				match result {
 					Some(return_expr) => {
 						return_expr.analyze_type(analyzer);
+                        // println!("{}", return_expr);
 						match return_expr.expr_type.clone() {
 							Some(actual_return_type) => {
-								if *actual_return_type.kind == Prim(PrimType::Void) && parent_fn_return_type != Prim(PrimType::Void) {
+                                // println!("{}, {}", &actual_return_type.kind, &parent_fn_return_type);
+								if *actual_return_type.kind != Prim(PrimType::Void) && 
+                                    parent_fn_return_type == &Prim(PrimType::Void) {
 									analyzer.report_error(&ReturnVoid, &return_expr.span);
-								}
-								if *actual_return_type.kind != parent_fn_return_type {
-									analyzer.report_error(&ReturnBad, &return_expr.span);
-								}
+								} else {
+                                    if &*actual_return_type.kind != parent_fn_return_type {
+                                        analyzer.report_error(&ReturnBad, &return_expr.span);
+                                    }
+                                }
 							},
 							None => ()
 						}
 					},
 					None => {
-						if parent_fn_return_type != Prim(PrimType::Void) {
+						if parent_fn_return_type != &Prim(PrimType::Void) {
 							analyzer.report_error(&ReturnMissing, &self.span);
 						}
 					}
@@ -173,7 +301,7 @@ impl TypeAnalysisStmtNode for LineStmt {
 			},
 			Exit => (),
 			Call(ref mut fn_call) => {
-				fn_call.eval_type(analyzer);
+				let _ = fn_call.eval_type(analyzer);
 			},
 		}
 	}
@@ -214,28 +342,22 @@ impl EvaluateExpType for UnaryExp {
 		let kind = *self.kind.clone();
 		match kind {
 			Neg => {
-				match &*expr_type.kind {
-					&Prim(PrimType::Int) => {
-						self.expr_type = self.exp.expr_type.clone();
-						Ok(expr_type)
-					},
-					_ => {
-						analyzer.report_error(&WrongOpMath, &self.exp.span);
-						Err(())
-					}
-				}
+                if &*expr_type.kind != &Prim(PrimType::Int) {
+                    analyzer.report_error(&WrongOpMath, &self.exp.span);
+                    return Err(());
+                } else {
+                    self.expr_type = self.exp.expr_type.clone();
+                    return Ok(expr_type);
+                }
 			},
 			Not => {
-				match &*expr_type.kind {
-					&Prim(PrimType::Bool) => {
-						self.expr_type = self.exp.expr_type.clone(); 
-						Ok(expr_type)
-					},
-					_ => {
-						analyzer.report_error(&WrongOpCmp, &self.exp.span);
-						Err(())
-					}
-				}
+                if &*expr_type.kind != &Prim(PrimType::Bool) {
+                    analyzer.report_error(&WrongOpLogic, &self.exp.span);
+                    return Err(());
+                } else {
+                    self.expr_type = self.exp.expr_type.clone();
+                    return Ok(expr_type);
+                }
 			},
 		}
 	}
@@ -244,57 +366,141 @@ impl EvaluateExpType for UnaryExp {
 impl EvaluateExpType for BinaryExp {
     fn eval_type(&mut self, analyzer: &mut TypeAnalyzer) -> Result<Type, ()> {
 		use BinaryExpKind::*;
-
+        // println!("{}", self);
 		self.lhs.analyze_type(analyzer);
 		self.rhs.analyze_type(analyzer);
-
+        // println!("{}, {}", self.lhs, self.rhs);
+        // println!("{:?}, {:?}", self.lhs.expr_type, self.rhs.expr_type);
 		let lhs_type = match &self.lhs.expr_type {
-			Some(x) => *x.clone(),
-			None => return Err(())
+			Some(x) => Some(*x.clone()),
+			None => None
 		};
 		let rhs_type = match &self.rhs.expr_type {
-			Some(x) => *x.clone(),
-			None => return Err(())
+			Some(x) => Some(*x.clone()),
+			None => None
 		};
 
-		let lhs_type_kind = *lhs_type.clone().kind;
-		let rhs_type_kind = *rhs_type.clone().kind;
+		let lhs_type_kind = match lhs_type.clone() {
+			Some(x) => Some(*x.clone().kind),
+			None => None
+		};
+
+		let rhs_type_kind = match rhs_type.clone() {
+			Some(x) => Some(*x.clone().kind),
+			None => None
+		};
 
 		// error check
 		match *self.kind {
 			Plus | Minus | Times | Divide => {
-				self.eval_type_helper(lhs_type, 
+				return self.eval_type_helper(lhs_type, 
 					lhs_type_kind, rhs_type_kind, 
 					PrimType::Int, WrongOpMath, analyzer
 				)
 			},
 			And | Or => {
-				self.eval_type_helper(lhs_type, 
+				return self.eval_type_helper(lhs_type, 
 					lhs_type_kind, rhs_type_kind, 
-					PrimType::Bool, WrongOpCmp, analyzer
+					PrimType::Bool, WrongOpLogic, analyzer
 				)
 			},
 			Less | Greater | LessEq | GreaterEq  => {
-				self.eval_type_helper(lhs_type, 
+				return self.eval_type_helper(lhs_type, 
 					lhs_type_kind, rhs_type_kind, 
-					PrimType::Int, WrongOpLogic, analyzer
+					PrimType::Int, WrongOpCmp, analyzer
 				)
 			},
 			//TODO: this
 			Equals | NotEquals  => {
-				// if lhs_type_kind != lhs_type_kind {
-				// }
-				Err(())
+                // println!("{}=?{}", self.lhs, self.rhs);
+                // println!("{}", analyzer);
+                let mut invalid_operands = false;
+                // println!("NYAOOOOOOOOOOOW????1");
+                
+                if self.lhs.is_fn_or_class(analyzer) {
+                    analyzer.report_error(&BadEqualityOne, &self.lhs.span);
+                    invalid_operands = true;
+                }
+                // println!("NYAOOOOOOOOOOOW????2");
+                if self.rhs.is_fn_or_class(analyzer) {
+                    analyzer.report_error(&BadEqualityOne, &self.rhs.span);
+                    invalid_operands = true;
+                }
+
+                use TypeKind::*;
+
+                if lhs_type_kind.is_some() && lhs_type_kind.clone().unwrap() == Prim(PrimType::Void) {
+                    analyzer.report_error(&BadEqualityOne, &self.lhs.span);
+                    invalid_operands = true;
+                }
+
+                if rhs_type_kind.is_some() && rhs_type_kind.clone().unwrap() == Prim(PrimType::Void) {
+                    analyzer.report_error(&BadEqualityOne, &self.rhs.span);
+                    invalid_operands = true;
+                }
+                // println!("NYAOOOOOOOOOOOW????3");
+                
+                if invalid_operands {
+                    return Err(());
+                }
+
+                // println!("{}, {}", lhs_type_kind, rhs_type_kind);
+                
+                if lhs_type_kind != rhs_type_kind {
+                    analyzer.report_error(&BadEqualityTwo, &self.span);
+                    return Err(());
+                }
+				
+                self.expr_type = self.lhs.expr_type.clone();
+                if lhs_type.is_some() {
+                    return Ok(lhs_type.unwrap());
+                } else {
+                    return Err(())
+                }
+                // match lhs_type.clone() {
+                //     Some(x) => Ok(x),
+                //     None => Err(())
+                // }
 			},
 		}
 	}
 }
 
+impl Exp {
+    fn is_fn_or_class(&self, analyzer: &mut TypeAnalyzer) -> bool {
+        use ExpKind::*;
+        // println!("{:?}", &self.kind);
+        match *self.kind.clone() {
+            Loc(location) => {
+                // println!("{}, {}", analyzer.has_class(&location.to_string()), analyzer.has_fn(&location.to_string()));
+                analyzer.has_class(&location.to_string()) ||
+                analyzer.has_fn(&location.to_string()) 
+            }
+            _ => false
+        }
+    }
+}
+
+impl Loc {
+    fn is_fn_or_class(&self, analyzer: &mut TypeAnalyzer) -> bool {
+        analyzer.has_class(&self.to_string()) ||
+        analyzer.has_fn(&self.to_string()) 
+    }
+}
+
 impl BinaryExp {
-	fn eval_type_helper(&mut self, lhs_type: Type, 
-			lhs_type_kind: TypeKind, rhs_type_kind: TypeKind,
+	fn eval_type_helper(&mut self, lhs_type: Option<Type>, 
+			lhs_type_kind: Option<TypeKind>, rhs_type_kind: Option<TypeKind>,
 			correct_type: PrimType, err: ErrorType, analyzer: &mut TypeAnalyzer
 	) -> Result<Type, ()> {
+        if lhs_type.is_none() || lhs_type_kind.is_none() || rhs_type_kind.is_none() {
+            return Err(())
+        }
+
+        let lhs_type = lhs_type.unwrap();
+        let lhs_type_kind = lhs_type_kind.unwrap();
+        let rhs_type_kind = rhs_type_kind.unwrap();
+
 		use TypeKind::*;
 		let mut error = false;
 		if lhs_type_kind != Prim(correct_type) {
@@ -334,8 +540,12 @@ impl EvaluateExpType for CallExp {
 		} else {
 			self.args.len()
 		};
+        // println!("{}", analyzer);
 		for i in 0..arg_num {
 			self.args[i].analyze_type(analyzer);
+            // println!("{:?}, {}", &self.args[i].expr_type, &func.arg_types[i]);
+            // println!("{}", self.args[i]);
+            // println!("{:?}, {}", self.args[i].expr_type.clone(), &func.arg_types[i]);
 			match self.args[i].expr_type.clone() {
 				Some(actual) => {
 					if *actual != func.arg_types[i] {
@@ -358,7 +568,58 @@ impl EvaluateExpType for CallExp {
 
 impl EvaluateExpType for Loc {
     fn eval_type(&mut self, analyzer: &mut TypeAnalyzer) -> Result<Type, ()> {
-		//TODO: this
-		Err(())
+        use LocKind::*;
+        
+        let my_type = match *self.kind.clone() {
+            Loc {ref mut base_class, ref mut field_name } => {
+                base_class.eval_type_rec(analyzer, field_name.to_string())
+            },
+            Id(x) => analyzer.get_var_type(x.to_string())
+        };
+		// println!("NYAOW \n{}, {:?}\n", &self.kind, &my_type);
+        // println!("{}\n", analyzer);
+        match my_type.clone() {
+            Ok(x) => self.loc_type = Some(x),
+            Err(()) => ()
+        };
+        my_type
 	}
 }
+
+impl Loc {
+    fn eval_type_rec(&mut self, analyzer: &mut TypeAnalyzer, current_id: String) -> Result<Type, ()> {
+        use LocKind::*;
+        let my_type = match *self.kind.clone() {
+            Loc {ref mut base_class, ref mut field_name } => {
+                base_class.eval_type_rec(analyzer, format!("{}--{}", current_id, field_name.to_string()))
+            },
+            Id(x) => analyzer.get_var_type(format!("{}--{}", current_id, x.to_string()))
+        };
+
+        match my_type.clone() {
+            Ok(x) => self.loc_type = Some(x),
+            Err(()) => ()
+        };
+
+        my_type
+	}
+}
+
+// impl EvaluateExpType for Id {
+//     fn eval_type(&mut self, analyzer: &mut TypeAnalyzer) -> Result<Type, ()> {
+//         use LocKind::*;
+//         let my_type = match *self.kind {
+//             Loc {ref mut base_class, ref mut field_name } => {
+//                 base_class.eval_type_rec(analyzer, field_name.to_string())
+//             },
+//             Id(x) => analyzer.get_var_type(x.to_string())
+//         };
+		
+//         match my_type {
+//             Ok(x) => self.loc_type = Some(x),
+//             Err(()) => ()
+//         };
+
+//         my_type
+// 	}
+// }
