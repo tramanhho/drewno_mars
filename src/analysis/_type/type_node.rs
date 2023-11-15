@@ -2,6 +2,8 @@ use super::*;
 use super::TypeAnalyzer;
 use super::ErrorType::*;
 use std::cmp::min;
+use std::rc::Rc;
+
 pub trait TypeAnalysisNode {
     fn analyze_type(&mut self, analyzer: &mut TypeAnalyzer);
 }
@@ -11,7 +13,7 @@ pub trait TypeAnalysisStmtNode {
 }
 
 pub trait EvaluateExpType {
-    fn eval_type(&mut self, analyzer: &mut TypeAnalyzer) -> Result<Type, ()>;
+    fn eval_type(&mut self, analyzer: &mut TypeAnalyzer) -> Result<Rc<Type>, ()>;
 }
 
 
@@ -33,9 +35,12 @@ impl TypeAnalysisNode for Decl {
         };
 	}
 }
+pub trait TypeAnalysisClassDeclNode {
+    fn analyze_type(&self, analyzer: &mut TypeAnalyzer);
+}
 
-impl TypeAnalysisNode for ClassDecl {
-	fn analyze_type(&mut self, analyzer: &mut TypeAnalyzer) {	
+impl TypeAnalysisClassDeclNode for Rc<ClassDecl> {
+	fn analyze_type(&self, analyzer: &mut TypeAnalyzer) {	
 		analyzer.add_class(self);
 	}
 }
@@ -53,7 +58,7 @@ impl TypeAnalysisNode for FnDecl {
                 VarDecl(x) => (x.id, x.var_type),
                 FormalDecl { id, formal_type } => (id, formal_type)
             };
-            analyzer.add_var(id.to_string(), *var_type.clone());
+            analyzer.add_var(id.to_string(), var_type.clone());
 		}
 
 		for stmt in self.body.iter_mut() {
@@ -72,18 +77,18 @@ impl TypeAnalysisNode for VarDecl {
 			Some(ref mut init) => { 
                 init.analyze_type(analyzer); 
                 if self.var_type.perfect == true {
-					analyzer.report_error(&NonLval, &self.id.span);
+					analyzer.report_error(&NonLval, &self.id.span.borrow());
 				}
 
                 match *self.var_type.kind.clone() {
-                    Class(_) => analyzer.report_error(&BadAssignOne, &self.id.span),
+                    Class(_) => analyzer.report_error(&BadAssignOne, &self.id.span.borrow()),
                     _ => ()
                 }
 
                 match &init.expr_type {
                     Some(expr_type) => {
                         if *expr_type != self.var_type {
-                            analyzer.report_error(&BadAssignOne, &init.span);
+                            analyzer.report_error(&BadAssignOne, &init.span.borrow());
                         }
                     },
                     None => ()
@@ -94,7 +99,7 @@ impl TypeAnalysisNode for VarDecl {
 
         match *self.var_type.kind.clone() {
             Class(class) => analyzer.add_class_inst(self.id.to_string(), class.name),
-            _ => analyzer.add_var(self.id.to_string(), *self.var_type.clone()),
+            _ => analyzer.add_var(self.id.to_string(), self.var_type.clone()),
         };
         // println!("{}", analyzer);
 	}
@@ -129,7 +134,7 @@ impl TypeAnalysisStmtNode for BlockStmt {
                 match is_condition_bool(cond) {
                     Ok(cond_is_bool) => {
                         if !cond_is_bool {
-                            analyzer.report_error(&CondNonBool, &cond.span);
+                            analyzer.report_error(&CondNonBool, &cond.span.borrow());
                         } 
                     }
                     Err(()) => ()
@@ -144,7 +149,7 @@ impl TypeAnalysisStmtNode for BlockStmt {
                 match is_condition_bool(cond) {
                     Ok(cond_is_bool) => {
                         if !cond_is_bool {
-                            analyzer.report_error(&CondNonBool, &cond.span);
+                            analyzer.report_error(&CondNonBool, &cond.span.borrow());
                         } 
                     }
                     Err(()) => ()
@@ -161,7 +166,7 @@ impl TypeAnalysisStmtNode for BlockStmt {
 	}
 }
 
-fn is_condition_bool(cond: &mut Box<Exp>) -> Result<bool, ()> {
+fn is_condition_bool(cond: &mut Rc<Exp>) -> Result<bool, ()> {
     use TypeKind::*;
     match cond.expr_type.clone() {
         Some(expr_type) => {
@@ -186,16 +191,16 @@ impl TypeAnalysisStmtNode for LineStmt {
                 
 				let dest_type = dest.eval_type(analyzer);
 				src.analyze_type(analyzer);
-				let src_type: &Option<Box<Type>> = &src.expr_type;
+				let src_type: &Option<Rc<Type>> = &src.expr_type;
 
                 let mut invalid_operators = false;
                 if dest.is_fn_or_class(analyzer) {
-                    analyzer.report_error(&BadAssignOne, &dest.span);
+                    analyzer.report_error(&BadAssignOne, &dest.span.borrow());
                     invalid_operators = true;
                 }
 
                 if src.is_fn_or_class(analyzer){
-                    analyzer.report_error(&BadAssignOne, &src.span);
+                    analyzer.report_error(&BadAssignOne, &src.span.borrow());
                     invalid_operators = true;
                 }
 
@@ -204,15 +209,15 @@ impl TypeAnalysisStmtNode for LineStmt {
 				}
 
                 let dest_type = dest_type.unwrap();
-                let src_type = *src_type.clone().unwrap();
+                let src_type = src_type.clone().unwrap();
 
                 if dest_type.perfect == true {
-                    analyzer.report_error(&NonLval, &dest.span);
+                    analyzer.report_error(&NonLval, &dest.span.borrow());
                     invalid_operators = true;
                 }
 
                 if src_type.perfect == true {
-                    analyzer.report_error(&NonLval, &src.span);
+                    analyzer.report_error(&NonLval, &src.span.borrow());
                     invalid_operators = true;
                 }
 
@@ -221,7 +226,7 @@ impl TypeAnalysisStmtNode for LineStmt {
                 }
 
                 if dest_type != src_type {
-                    analyzer.report_error(&BadAssignTwo, &self.span);
+                    analyzer.report_error(&BadAssignTwo, &self.span.borrow());
                 }
 				
 			},
@@ -232,7 +237,7 @@ impl TypeAnalysisStmtNode for LineStmt {
 				}
 
 				if *loc_type.unwrap().kind != Prim(PrimType::Int) {
-					analyzer.report_error(&WrongOpMath, &loc.span);
+					analyzer.report_error(&WrongOpMath, &loc.span.borrow());
 				}
 
 			},
@@ -241,17 +246,17 @@ impl TypeAnalysisStmtNode for LineStmt {
 				match *output.kind.clone() {
 					Loc(loc) => {
 						if analyzer.has_fn(&loc.to_string()) {
-							analyzer.report_error(&GiveFn, &output.span);
+							analyzer.report_error(&GiveFn, &output.span.borrow());
 						}
 						if analyzer.has_class(&loc.to_string()) {
-							analyzer.report_error(&GiveClass, &output.span);
+							analyzer.report_error(&GiveClass, &output.span.borrow());
 						}
 					},
 					CallExp(_) => {
 						match output.expr_type.clone() {
 							Some(return_type) => {
 								if *return_type.kind == Prim(PrimType::Void) {
-									analyzer.report_error(&GiveVoid, &output.span);
+									analyzer.report_error(&GiveVoid, &output.span.borrow());
 								}
 							},
 							None => ()
@@ -262,10 +267,10 @@ impl TypeAnalysisStmtNode for LineStmt {
 			},
 			Take { ref mut recipient } => {
 				if analyzer.has_fn(&recipient.to_string()) {
-					analyzer.report_error(&ReadFn, &recipient.span);
+					analyzer.report_error(&ReadFn, &recipient.span.borrow());
 				}
 				if analyzer.has_class(&recipient.to_string()) {
-					analyzer.report_error(&ReadClass, &recipient.span);
+					analyzer.report_error(&ReadClass, &recipient.span.borrow());
 				}
 			},
 			Return { ref mut result} => {
@@ -279,10 +284,10 @@ impl TypeAnalysisStmtNode for LineStmt {
                                 // println!("{}, {}", &actual_return_type.kind, &parent_fn_return_type);
 								if *actual_return_type.kind != Prim(PrimType::Void) && 
                                     parent_fn_return_type == &Prim(PrimType::Void) {
-									analyzer.report_error(&ReturnVoid, &return_expr.span);
+									analyzer.report_error(&ReturnVoid, &return_expr.span.borrow());
 								} else {
                                     if &*actual_return_type.kind != parent_fn_return_type {
-                                        analyzer.report_error(&ReturnBad, &return_expr.span);
+                                        analyzer.report_error(&ReturnBad, &return_expr.span.borrow());
                                     }
                                 }
 							},
@@ -291,7 +296,7 @@ impl TypeAnalysisStmtNode for LineStmt {
 					},
 					None => {
 						if parent_fn_return_type != &Prim(PrimType::Void) {
-							analyzer.report_error(&ReturnMissing, &self.span);
+							analyzer.report_error(&ReturnMissing, &self.span.borrow());
 						}
 					}
 				}
@@ -317,21 +322,21 @@ impl TypeAnalysisNode for Exp {
 		};
 		
 		match expr_type {
-			Ok(x) => self.expr_type = Some(Box::new(x)),
+			Ok(x) => self.expr_type = Some(x),
 			Err(()) => ()
 		}
 	}
 }
 
 impl EvaluateExpType for UnaryExp {
-    fn eval_type(&mut self, analyzer: &mut TypeAnalyzer) -> Result<Type, ()> {
+    fn eval_type(&mut self, analyzer: &mut TypeAnalyzer) -> Result<Rc<Type>, ()> {
 		use TypeKind::*;
 		use UnaryExpKind::*;
 
 		self.exp.analyze_type(analyzer);
 
 		let expr_type = match self.exp.expr_type.clone() {
-			Some(x) => *x,
+			Some(x) => x,
 			None => return Err(())
 		};
 
@@ -340,7 +345,7 @@ impl EvaluateExpType for UnaryExp {
 		match kind {
 			Neg => {
                 if &*expr_type.kind != &Prim(PrimType::Int) {
-                    analyzer.report_error(&WrongOpMath, &self.exp.span);
+                    analyzer.report_error(&WrongOpMath, &self.exp.span.borrow());
                     return Err(());
                 } else {
                     self.expr_type = self.exp.expr_type.clone();
@@ -349,7 +354,7 @@ impl EvaluateExpType for UnaryExp {
 			},
 			Not => {
                 if &*expr_type.kind != &Prim(PrimType::Bool) {
-                    analyzer.report_error(&WrongOpLogic, &self.exp.span);
+                    analyzer.report_error(&WrongOpLogic, &self.exp.span.borrow());
                     return Err(());
                 } else {
                     self.expr_type = self.exp.expr_type.clone();
@@ -361,27 +366,27 @@ impl EvaluateExpType for UnaryExp {
 }
 
 impl EvaluateExpType for BinaryExp {
-    fn eval_type(&mut self, analyzer: &mut TypeAnalyzer) -> Result<Type, ()> {
+    fn eval_type(&mut self, analyzer: &mut TypeAnalyzer) -> Result<Rc<Type>, ()> {
 		use BinaryExpKind::*;
 		self.lhs.analyze_type(analyzer);
 		self.rhs.analyze_type(analyzer);
 
 		let lhs_type = match &self.lhs.expr_type {
-			Some(x) => Some(*x.clone()),
+			Some(x) => Some(x.clone()),
 			None => None
 		};
 		let rhs_type = match &self.rhs.expr_type {
-			Some(x) => Some(*x.clone()),
+			Some(x) => Some(x.clone()),
 			None => None
 		};
 
 		let lhs_type_kind = match lhs_type.clone() {
-			Some(x) => Some(*x.clone().kind),
+			Some(x) => Some(x.clone().kind),
 			None => None
 		};
 
 		let rhs_type_kind = match rhs_type.clone() {
-			Some(x) => Some(*x.clone().kind),
+			Some(x) => Some(x.clone().kind),
 			None => None
 		};
 
@@ -409,23 +414,23 @@ impl EvaluateExpType for BinaryExp {
                 let mut invalid_operands = false;
                 
                 if self.lhs.is_fn_or_class(analyzer) {
-                    analyzer.report_error(&BadEqualityOne, &self.lhs.span);
+                    analyzer.report_error(&BadEqualityOne, &self.lhs.span.borrow());
                     invalid_operands = true;
                 }
                 if self.rhs.is_fn_or_class(analyzer) {
-                    analyzer.report_error(&BadEqualityOne, &self.rhs.span);
+                    analyzer.report_error(&BadEqualityOne, &self.rhs.span.borrow());
                     invalid_operands = true;
                 }
 
                 use TypeKind::*;
 
-                if lhs_type_kind.is_some() && lhs_type_kind.clone().unwrap() == Prim(PrimType::Void) {
-                    analyzer.report_error(&BadEqualityOne, &self.lhs.span);
+                if lhs_type_kind.is_some() && lhs_type_kind.clone().unwrap() == Rc::new(Prim(PrimType::Void)) {
+                    analyzer.report_error(&BadEqualityOne, &self.lhs.span.borrow());
                     invalid_operands = true;
                 }
 
-                if rhs_type_kind.is_some() && rhs_type_kind.clone().unwrap() == Prim(PrimType::Void) {
-                    analyzer.report_error(&BadEqualityOne, &self.rhs.span);
+                if rhs_type_kind.is_some() && rhs_type_kind.clone().unwrap() == Rc::new(Prim(PrimType::Void)) {
+                    analyzer.report_error(&BadEqualityOne, &self.rhs.span.borrow());
                     invalid_operands = true;
                 }
                 
@@ -435,7 +440,7 @@ impl EvaluateExpType for BinaryExp {
 
                 
                 if lhs_type_kind != rhs_type_kind {
-                    analyzer.report_error(&BadEqualityTwo, &self.span);
+                    analyzer.report_error(&BadEqualityTwo, &self.span.borrow());
                     return Err(());
                 }
 				
@@ -471,10 +476,10 @@ impl Loc {
 }
 
 impl BinaryExp {
-	fn eval_type_helper(&mut self, lhs_type: Option<Type>, 
-			lhs_type_kind: Option<TypeKind>, rhs_type_kind: Option<TypeKind>,
+	fn eval_type_helper(&mut self, lhs_type: Option<Rc<Type>>, 
+			lhs_type_kind: Option<Rc<TypeKind>>, rhs_type_kind: Option<Rc<TypeKind>>,
 			correct_type: PrimType, err: ErrorType, analyzer: &mut TypeAnalyzer
-	) -> Result<Type, ()> {
+	) -> Result<Rc<Type>, ()> {
         if lhs_type.is_none() || lhs_type_kind.is_none() || rhs_type_kind.is_none() {
             return Err(())
         }
@@ -485,12 +490,12 @@ impl BinaryExp {
 
 		use TypeKind::*;
 		let mut error = false;
-		if lhs_type_kind != Prim(correct_type) {
-			analyzer.report_error(&err, &self.lhs.span);
+		if lhs_type_kind != Rc::new(Prim(correct_type)) {
+			analyzer.report_error(&err, &self.lhs.span.borrow());
 			error = true;
 		}
-		if rhs_type_kind != Prim(correct_type) {
-			analyzer.report_error(&err, &self.rhs.span);
+		if rhs_type_kind != Rc::new(Prim(correct_type)) {
+			analyzer.report_error(&err, &self.rhs.span.borrow());
 			error = true;
 		}
 		if !error {
@@ -503,19 +508,19 @@ impl BinaryExp {
 }
 
 impl EvaluateExpType for CallExp {
-    fn eval_type(&mut self, analyzer: &mut TypeAnalyzer) -> Result<Type, ()> {
+    fn eval_type(&mut self, analyzer: &mut TypeAnalyzer) -> Result<Rc<Type>, ()> {
 		let binding = analyzer.clone();
 		let func = binding.get_fn(&self.name.to_string());
 		
 		if func.is_err() { // couldn't find in fn list, called a non func
-			analyzer.report_error(&CallNonFn, &self.name.span);
+			analyzer.report_error(&CallNonFn, &self.name.span.borrow());
 			return Err(())
 		}
 
 		let func = func?;
 		let mut error = false;
 		let arg_num = if self.args.len() != func.arg_types.len() {
-			analyzer.report_error(&FnWrongArgNum, &self.span);
+			analyzer.report_error(&FnWrongArgNum, &self.span.borrow());
 			error = true;
 			min(self.args.len(), func.arg_types.len())
 		} else {
@@ -525,8 +530,8 @@ impl EvaluateExpType for CallExp {
 			self.args[i].analyze_type(analyzer);
 			match self.args[i].expr_type.clone() {
 				Some(actual) => {
-					if *actual != func.arg_types[i] {
-						analyzer.report_error(&FnWrongArgType, &self.args[i].span);
+					if actual != func.arg_types[i] {
+						analyzer.report_error(&FnWrongArgType, &self.args[i].span.borrow());
 						error = true;
 					}
 				},
@@ -544,7 +549,7 @@ impl EvaluateExpType for CallExp {
 }
 
 impl EvaluateExpType for Loc {
-    fn eval_type(&mut self, analyzer: &mut TypeAnalyzer) -> Result<Type, ()> {
+    fn eval_type(&mut self, analyzer: &mut TypeAnalyzer) -> Result<Rc<Type>, ()> {
 		let my_type = analyzer.get_var_type(self.to_string());
         match my_type.clone() {
             Ok(x) => self.loc_type = Some(x),

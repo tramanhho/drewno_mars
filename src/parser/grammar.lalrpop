@@ -1,6 +1,7 @@
 use crate::scanner::tokens::{TokenType, LexingError};
 use crate::parser::ast::*;
 use crate::parser::ast::span::Span;
+use std::{rc::Rc, cell::RefCell};
 grammar;
 
 extern {
@@ -64,14 +65,14 @@ pub Program: Box<Program> = {
      <globals:Decl*>=> Box::new(Program{ globals } )
 }
 
-pub Decl: Box<Decl> = {
-    <v:VarDecl> => Box::new(Decl::VarDecl(v)),
-    ClassDecl => Box::new(Decl::ClassDecl(<>)),
-    FnDecl => Box::new(Decl::FnDecl(<>)),
+pub Decl: Rc<Decl> = {
+    <v:VarDecl> => Rc::new(Decl::VarDecl(v)),
+    ClassDecl => Rc::new(Decl::ClassDecl(<>)),
+    FnDecl => Rc::new(Decl::FnDecl(<>)),
 }
 
-pub VarDecl: Box<VarDecl> = {
-    <id:Id> "COLON" <var_type: Type> "SEMICOL" => Box::new(
+pub VarDecl: Rc<VarDecl> = {
+    <id:Id> "COLON" <var_type: Type> "SEMICOL" => Rc::new(
         VarDecl {
             id, 
             var_type,
@@ -80,7 +81,7 @@ pub VarDecl: Box<VarDecl> = {
         }
     ),
     <id:Id> "COLON" <var_type: Type> "ASSIGN" <init_val: Exp> "SEMICOL" => {
-        Box::new(
+        Rc::new(
             VarDecl {
                 id, 
                 var_type,
@@ -91,7 +92,7 @@ pub VarDecl: Box<VarDecl> = {
     },
 }
 
-pub Type: Box<Type> = {
+pub Type: Rc<Type> = {
     PrimType => Type::new(TypeKind::Prim(<>), false),
     Id => Type::new(TypeKind::Class(<>), false),
     "PERFECT" <prim_type: PrimType> => Type::new(TypeKind::Prim(prim_type), true),
@@ -104,30 +105,30 @@ pub PrimType: PrimType = {
     "VOID" => PrimType::Void,
 }
 
-pub ClassDecl: Box<ClassDecl> = {
-    <id:Id> "COLON" "CLASS" "LCURLY" <member_f:ClassBody> "RCURLY" "SEMICOL" => Box::new(
+pub ClassDecl: Rc<ClassDecl> = {
+    <id:Id> "COLON" "CLASS" "LCURLY" <member_f:ClassBody> "RCURLY" "SEMICOL" => Rc::new(
         ClassDecl {
             id,
-            member_f: Box::new(member_f),
+            member_f: Rc::new(member_f),
         }
     ),
 }
 
-pub ClassBody: Vec<Box<Decl>> = {
+pub ClassBody: Vec<Rc<Decl>> = {
     <mut vec:(Decl)*> <new_var:VarDecl> => {
-        vec.push(Box::new(Decl::VarDecl(new_var)));
+        vec.push(Rc::new(Decl::VarDecl(new_var)));
         vec
     },
     <mut vec:(Decl)*> <new_fn:FnDecl> => {
-        vec.push(Box::new(Decl::FnDecl(new_fn)));
+        vec.push(Rc::new(Decl::FnDecl(new_fn)));
         vec
     },
-    => Vec::<Box<Decl>>::new(),
+    => Vec::<Rc<Decl>>::new(),
 }
 
 
-pub FnDecl: Box<FnDecl> = {
-    <id:Id> "COLON" "LPAREN" <args:FormalsList> "RPAREN" <ret:Type> "LCURLY" <body:StmtList> "RCURLY" => Box::new(
+pub FnDecl: Rc<FnDecl> = {
+    <id:Id> "COLON" "LPAREN" <args:FormalsList> "RPAREN" <ret:Type> "LCURLY" <body:StmtList> "RCURLY" => Rc::new(
         FnDecl {
             id, args, ret, body
         }
@@ -141,8 +142,8 @@ pub FormalsList = {
     // this should be fine because FormalsNode/FormalsListNode isn't a thing in the inheritance/collaboration diagram
 }
 
-pub FormalDecl: Box<FormalDecl> = {
-    <id:Id> "COLON" <formal_type: Type> => Box::new(
+pub FormalDecl: Rc<FormalDecl> = {
+    <id:Id> "COLON" <formal_type: Type> => Rc::new(
         FormalDecl::FormalDecl {
             id, 
             formal_type
@@ -150,30 +151,30 @@ pub FormalDecl: Box<FormalDecl> = {
     ),
 }
 
-pub StmtList: Vec<Box<Stmt>> = {
+pub StmtList: Vec<Rc<Stmt>> = {
     <stmts:Stmt*> => stmts
 }
 
-pub Stmt: Box<Stmt> = {
-    <bs:BlockStmt> => Box::new(Stmt::Block(bs)),
-    <s:LineStmt> "SEMICOL" => Box::new(Stmt::Line(s)),
-    VarDecl => Box::new(Stmt::VarDecl(<>)),
+pub Stmt: Rc<Stmt> = {
+    <bs:BlockStmt> => Rc::new(Stmt::Block(bs)),
+    <s:LineStmt> "SEMICOL" => Rc::new(Stmt::Line(s)),
+    VarDecl => Rc::new(Stmt::VarDecl(<>)),
 }
 
-pub BlockStmt: Box<BlockStmt> = {
-    "WHILE" "LPAREN" <cond: Exp> "RPAREN" "LCURLY" <body: StmtList> "RCURLY" => Box::new(
+pub BlockStmt: Rc<BlockStmt> = {
+    "WHILE" "LPAREN" <cond: Exp> "RPAREN" "LCURLY" <body: StmtList> "RCURLY" => Rc::new(
         BlockStmt::While{cond, body}
     ),
-    "IF" "LPAREN" <cond: Exp> "RPAREN" "LCURLY" <body: StmtList> "RCURLY" => Box::new(
+    "IF" "LPAREN" <cond: Exp> "RPAREN" "LCURLY" <body: StmtList> "RCURLY" => Rc::new(
         BlockStmt::If{cond, body}
     ),
     "IF" "LPAREN" <cond: Exp> "RPAREN" "LCURLY" <true_branch: StmtList> "RCURLY" 
-    "ELSE" "LCURLY" <false_branch: StmtList> "RCURLY" => Box::new(
+    "ELSE" "LCURLY" <false_branch: StmtList> "RCURLY" => Rc::new(
         BlockStmt::IfElse{cond, true_branch, false_branch}
     ),
 }
 
-pub LineStmt: Box<LineStmt> = {
+pub LineStmt: Rc<LineStmt> = {
     // use LineStmtKind::*;
 
     <l:@L> <dest:Loc> "ASSIGN" <src:Exp> <r:@R> => LineStmt::new(LineStmtKind::Assign{dest, src}, l, r),
@@ -187,10 +188,10 @@ pub LineStmt: Box<LineStmt> = {
     <l:@L> <fn_call: CallExp> <r:@R>            => LineStmt::new(LineStmtKind::Call(fn_call), l, r),
 }
 
-pub Exp: Box<Exp> = {
+pub Exp: Rc<Exp> = {
     // #[precedence(level="2")] #[assoc(side="right")]
     <l:@L> <lhs:Term> "EQUALS" <rhs:Exp> <r:@R> => Exp::new(
-        Box::new(ExpKind::BinaryExp(BinaryExp::new(
+        Rc::new(ExpKind::BinaryExp(BinaryExp::new(
             lhs,
             rhs,
             BinaryExpKind::Equals, l, r
@@ -198,7 +199,7 @@ pub Exp: Box<Exp> = {
     ),
 
     <l:@L> <lhs:Term> "NOTEQUALS" <rhs:Exp> <r:@R> => Exp::new(
-        Box::new(ExpKind::BinaryExp(BinaryExp::new(
+        Rc::new(ExpKind::BinaryExp(BinaryExp::new(
             lhs,
             rhs,
             BinaryExpKind::NotEquals, l, r
@@ -206,7 +207,7 @@ pub Exp: Box<Exp> = {
     ),
 
     <l:@L> <lhs:Term> "GREATER" <rhs:Exp> <r:@R> => Exp::new(
-        Box::new(ExpKind::BinaryExp(BinaryExp::new(
+        Rc::new(ExpKind::BinaryExp(BinaryExp::new(
             lhs,
             rhs,
             BinaryExpKind::Greater, l, r
@@ -214,7 +215,7 @@ pub Exp: Box<Exp> = {
     ),
 
     <l:@L> <lhs:Term> "GREATEREQ" <rhs:Exp> <r:@R> => Exp::new(
-        Box::new(ExpKind::BinaryExp(BinaryExp::new(
+        Rc::new(ExpKind::BinaryExp(BinaryExp::new(
             lhs,
             rhs,
             BinaryExpKind::GreaterEq, l, r
@@ -222,7 +223,7 @@ pub Exp: Box<Exp> = {
     ),
 
     <l:@L> <lhs:Term> "LESS" <rhs:Exp> <r:@R> => Exp::new(
-        Box::new(ExpKind::BinaryExp(BinaryExp::new(
+        Rc::new(ExpKind::BinaryExp(BinaryExp::new(
             lhs,
             rhs,
             BinaryExpKind::Less, l, r
@@ -230,7 +231,7 @@ pub Exp: Box<Exp> = {
     ),
 
     <l:@L> <lhs:Term> "LESSEQ" <rhs:Exp> <r:@R> => Exp::new(
-        Box::new(ExpKind::BinaryExp(BinaryExp::new(
+        Rc::new(ExpKind::BinaryExp(BinaryExp::new(
             lhs,
             rhs,
             BinaryExpKind::LessEq, l, r
@@ -241,51 +242,51 @@ pub Exp: Box<Exp> = {
     BabyExp,
 };
 
-pub BabyExp: Box<Exp> = {
+pub BabyExp: Rc<Exp> = {
     <l:@L> <lhs:Term> "DASH" <rhs:Exp> <r:@R> => Exp::new(
-        Box::new(ExpKind::BinaryExp(BinaryExp::new(
+        Rc::new(ExpKind::BinaryExp(BinaryExp::new(
             lhs, rhs, BinaryExpKind::Minus, l, r
         ))), l, r
     ),
 
     <l:@L> <lhs:Term> "CROSS" <rhs:Exp> <r:@R> => Exp::new(
-        Box::new(ExpKind::BinaryExp(BinaryExp::new(
+        Rc::new(ExpKind::BinaryExp(BinaryExp::new(
             lhs, rhs, BinaryExpKind::Plus, l, r
         ))), l, r
     ),
 
     <l:@L> <lhs:Term> "STAR" <rhs:Exp> <r:@R> => Exp::new(
-        Box::new(ExpKind::BinaryExp(BinaryExp::new(
+        Rc::new(ExpKind::BinaryExp(BinaryExp::new(
             lhs, rhs, BinaryExpKind::Times, l, r
         ))), l, r
     ),
 
     <l:@L> <lhs:Term> "SLASH" <rhs:Exp> <r:@R> => Exp::new(
-        Box::new(ExpKind::BinaryExp(BinaryExp::new(
+        Rc::new(ExpKind::BinaryExp(BinaryExp::new(
             lhs, rhs, BinaryExpKind::Divide, l, r
         ))), l, r
     ),
 
     <l:@L> <lhs:Term> "AND" <rhs:Exp> <r:@R> => Exp::new(
-        Box::new(ExpKind::BinaryExp(BinaryExp::new(
+        Rc::new(ExpKind::BinaryExp(BinaryExp::new(
             lhs, rhs, BinaryExpKind::And, l, r
         ))), l, r
     ), 
 
     <l:@L> <lhs:Term> "OR" <rhs:Exp> <r:@R> => Exp::new(
-        Box::new(ExpKind::BinaryExp(BinaryExp::new(
+        Rc::new(ExpKind::BinaryExp(BinaryExp::new(
             lhs, rhs, BinaryExpKind::Or, l, r
         ))), l, r
     ), 
 
     <l:@L> "NOT" <exp:Exp> <r:@R> => Exp::new(
-        Box::new(ExpKind::UnaryExp(UnaryExp::new(
+        Rc::new(ExpKind::UnaryExp(UnaryExp::new(
             exp, UnaryExpKind::Not, l, r
         ))), l, r
     ), 
 
     <l:@L> "DASH" <exp:Exp> <r:@R> => Exp::new(
-        Box::new(ExpKind::UnaryExp(UnaryExp::new(
+        Rc::new(ExpKind::UnaryExp(UnaryExp::new(
             exp, UnaryExpKind::Neg, l, r
         ))), l, r
     ), 
@@ -293,13 +294,13 @@ pub BabyExp: Box<Exp> = {
     Term,
 };
 
-pub CallExp: Box<CallExp> = {
-    <l:@L> <name:Loc> "LPAREN" <args:ActualsList> "RPAREN" <r:@R> => Box::new(
+pub CallExp: Rc<CallExp> = {
+    <l:@L> <name:Loc> "LPAREN" <args:ActualsList> "RPAREN" <r:@R> => Rc::new(
         CallExp {
             name,
             args: args,
             fn_type: None,
-            span: Span::new(l, r) 
+            span: RefCell::new(Span::new(l, r)) 
         }
     ),
 };
@@ -309,7 +310,7 @@ pub ActualsList = {
 };
 
 
-pub Term: Box<Exp> = {
+pub Term: Rc<Exp> = {
     <l:@L> <loc: Loc>                 <r:@R> => Exp::new(ExpKind::new(ExpKind::Loc(loc)), l, r),
     <l:@L> <val:"INTLITERAL">         <r:@R> => Exp::new_with_type(ExpKind::new(ExpKind::IntLit(val)), PrimType::Int, l, r),
     <l:@L> <string:"STRINGLITERAL">   <r:@R> => Exp::new_with_type(ExpKind::new(ExpKind::StrLit(string)), PrimType::String, l, r),
@@ -321,24 +322,24 @@ pub Term: Box<Exp> = {
 };
 
 //loc
-pub Loc: Box<Loc> = {
-    <l:@L> <id: Id> <r:@R> => Box::new(Loc {
-        span: Span::new(l, r), 
+pub Loc: Rc<Loc> = {
+    <l:@L> <id: Id> <r:@R> => Rc::new(Loc {
+        span: RefCell::new(Span::new(l, r)), 
         loc_type: None,
-        kind: Box::new(LocKind::Id(id))
+        kind: Rc::new(LocKind::Id(id))
     }),
-    <l:@L> <base_class:Loc> "POSTDEC" <field_name:Id> <r:@R> => Box::new(Loc{
-        span: Span::new(l, r), 
+    <l:@L> <base_class:Loc> "POSTDEC" <field_name:Id> <r:@R> => Rc::new(Loc{
+        span: RefCell::new(Span::new(l, r)), 
         loc_type: None,
-        kind: Box::new(LocKind::Loc{ base_class, field_name })
+        kind: Rc::new(LocKind::Loc{ base_class, field_name })
     }),
 };
 
 //loc
-pub Id: Box<Id> = {
-    <l:@L> <name:"ID"> <r:@R> => Box::new(Id{
+pub Id: Rc<Id> = {
+    <l:@L> <name:"ID"> <r:@R> => Rc::new(Id{
         name,
-        id_type: None,
-        span: Span::new(l, r)
+        id_type: RefCell::new(None),
+        span: RefCell::new(Span::new(l, r))
     })
 };
