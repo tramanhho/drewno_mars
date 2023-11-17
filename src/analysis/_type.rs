@@ -7,7 +7,6 @@ mod type_node;
 use type_node::*;
 
 use std::fmt::{Display, Formatter, Error};
-use std::rc::Rc;
 
 pub fn type_error_check(mut prog: Box<Program>)  {
     let mut analyzer: TypeAnalyzer = TypeAnalyzer {
@@ -29,7 +28,7 @@ pub fn type_error_check(mut prog: Box<Program>)  {
 pub struct TypeAnalyzer {
 	functions: HashMap<String, FunctionKind>,
 	classes: HashMap<String, Vec<Field>>,
-    vars: HashMap<VarKey, Rc<Type>>,
+    vars: HashMap<VarKey, Type>,
     scope: usize,
 	error: bool
 }
@@ -73,8 +72,8 @@ impl Display for VarKey {
 
 #[derive(Clone)]
 pub struct FunctionKind {
-	arg_types: Vec<Rc<Type>>,
-	return_type: Rc<Type>,
+	arg_types: Vec<Type>,
+	return_type: Type,
 }
 
 impl Display for FunctionKind {
@@ -88,7 +87,7 @@ impl Display for FunctionKind {
 #[derive(Clone)]
 pub struct Field {
 	id: String,
-    field_type: Rc<Type>
+    field_type: Type
 }
 
 impl Display for Field {
@@ -102,7 +101,7 @@ impl Display for Field {
 // }
 
 impl TypeAnalyzer {
-    pub fn add_var(&mut self, id: String, var_type: Rc<Type>) {
+    pub fn add_var(&mut self, id: String, var_type: Type) {
 		let key = VarKey {
 			id,
 			scope: self.scope
@@ -142,25 +141,25 @@ impl TypeAnalyzer {
 	}
 
 	fn add_fn_helper(&mut self, func: &mut FnDecl, id: String) {
-		let mut arg_types: Vec<Rc<Type>> = Vec::new();
+		let mut arg_types: Vec<Type> = Vec::new();
 		for arg in func.args.iter() {
 			use crate::parser::ast::FormalDecl::*;
-			let arg = **arg;
+			let arg = &**arg;
 			match arg {
-				VarDecl(x) => arg_types.push(x.var_type.clone()),
-				FormalDecl{id: _, formal_type} => arg_types.push(formal_type.clone())
+				VarDecl(x) => arg_types.push(*x.var_type.clone()),
+				FormalDecl{id: _, formal_type} => arg_types.push(*formal_type.clone())
 			}
 		}
 
 		let value = FunctionKind {
 			arg_types,
-			return_type: func.ret.clone()
+			return_type: *func.ret.clone()
 		};
 
 		self.functions.insert(id, value);
 	}
 
-	pub fn add_class(&mut self, class: &Rc<ClassDecl>) {
+	pub fn add_class(&mut self, class: &mut ClassDecl) {
 		let mut fields: Vec<Field> = Vec::new();
 		for field in class.member_f.iter() {
 			use crate::parser::ast::Decl::*;
@@ -172,7 +171,7 @@ impl TypeAnalyzer {
 						Prim(_) => {
 							let var_field = Field {
 								id: var_decl.id.to_string(),
-								field_type: var_decl.var_type
+								field_type: *var_decl.var_type
 							};
 							fields.push(var_field)
 						}
@@ -234,7 +233,7 @@ impl TypeAnalyzer {
 		}
 	}
 
-    pub fn get_var_type(&self, id: String) -> Result<Rc<Type>, ()> {
+    pub fn get_var_type(&self, id: String) -> Result<Type, ()> {
         let mut key_check: Vec<VarKey> = Vec::new();
         
         for s in (0..=self.scope).rev() {

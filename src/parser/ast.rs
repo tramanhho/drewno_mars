@@ -1,41 +1,39 @@
 pub mod display;
 pub mod span;
-use std::{rc::Rc, cell::RefCell};
-
 use span::Span;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Program {
-    pub globals: Vec<Rc<Decl>>,
+    pub globals: Vec<Box<Decl>>,
     // pub position: Position
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Decl {
-    VarDecl(Rc<VarDecl>),
-    ClassDecl(Rc<ClassDecl>),
-    FnDecl(Rc<FnDecl>),
+    VarDecl(Box<VarDecl>),
+    ClassDecl(Box<ClassDecl>),
+    FnDecl(Box<FnDecl>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct VarDecl {
-    pub var_type: Rc<Type>, 
-    pub id: Rc<Id>, 
-    pub init_val: Option<Rc<Exp>>,
+    pub var_type: Box<Type>, 
+    pub id: Box<Id>, 
+    pub init_val: Option<Box<Exp>>,
     // pub position: Position
 }
 
 #[derive(Debug, Clone)]
 pub struct Type {
     pub perfect: bool,
-    pub kind: Rc<TypeKind>
+    pub kind: Box<TypeKind>
 }
 
 impl Type {
-    pub fn new(kind: TypeKind, perfect: bool) -> Rc<Type> {
-        Rc::new(Type {
+    pub fn new(kind: TypeKind, perfect: bool) -> Box<Type> {
+        Box::new(Type {
             perfect: perfect,
-            kind: Rc::new(kind)
+            kind: Box::new(kind)
         })
     }
 }
@@ -60,7 +58,7 @@ impl PartialEq for Type {
 #[derive(Debug, Clone, PartialEq)]
 pub enum TypeKind {
     Prim(PrimType),
-    Class(Rc<Id>),
+    Class(Box<Id>),
 }
 
 #[derive(Debug, Clone, PartialEq, Copy)]
@@ -73,17 +71,17 @@ pub enum PrimType {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ClassDecl {
-    pub id: Rc<Id>, 
-    pub member_f: Rc<Vec<Rc<Decl>>>,
+    pub id: Box<Id>, 
+    pub member_f: Box<Vec<Box<Decl>>>,
     // pub position: Position
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct FnDecl {
-    pub id: Rc<Id>, 
-    pub args: Vec<Rc<FormalDecl>>, 
-    pub ret: Rc<Type>, 
-    pub body: Vec<Rc<Stmt>>,
+    pub id: Box<Id>, 
+    pub args: Vec<Box<FormalDecl>>, 
+    pub ret: Box<Type>, 
+    pub body: Vec<Box<Stmt>>,
     // pub position: Position
 }
 
@@ -91,79 +89,79 @@ pub struct FnDecl {
 pub enum FormalDecl {
     VarDecl(VarDecl),
     FormalDecl{
-        id: Rc<Id>, 
-        formal_type: Rc<Type>,
+        id: Box<Id>, 
+        formal_type: Box<Type>,
         // position: Position
     },
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Stmt {
-    Block(Rc<BlockStmt>),
-    Line(Rc<LineStmt>),
-    VarDecl(Rc<VarDecl>),
+    Block(Box<BlockStmt>),
+    Line(Box<LineStmt>),
+    VarDecl(Box<VarDecl>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum BlockStmt {
-    While  {cond: Rc<Exp>, body: Vec<Rc<Stmt>> },
-    If     {cond: Rc<Exp>, body: Vec<Rc<Stmt>> } ,
-    IfElse {cond: Rc<Exp>, true_branch: Vec<Rc<Stmt>>, false_branch: Vec<Rc<Stmt>> },
+    While  {cond: Box<Exp>, body: Vec<Box<Stmt>> },
+    If     {cond: Box<Exp>, body: Vec<Box<Stmt>> } ,
+    IfElse {cond: Box<Exp>, true_branch: Vec<Box<Stmt>>, false_branch: Vec<Box<Stmt>> },
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct LineStmt {
-    pub kind: Rc<LineStmtKind>,
-    pub span: RefCell<Span>,
+    pub kind: Box<LineStmtKind>,
+    pub span: Span,
 }
 
 impl LineStmt {
-    pub fn new(kind: LineStmtKind, l: usize, r: usize) -> Rc<LineStmt> {
-        Rc::new(LineStmt { 
-            kind: Rc::new(kind), 
-            span: RefCell::new(Span::new(l, r))
+    pub fn new(kind: LineStmtKind, l: usize, r: usize) -> Box<LineStmt> {
+        Box::new(LineStmt { 
+            kind: Box::new(kind), 
+            span: Span::new(l, r)
         })
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum LineStmtKind {
-    Assign { dest: Rc<Loc>, src: Rc<Exp> },
-    PostDec{ loc: Rc<Loc>},
-    PostInc{ loc: Rc<Loc>},
-    Give   { output: Rc<Exp>},
-    Take   { recipient: Rc<Loc>},
-    Return { result: Option<Rc<Exp>>},
+    Assign { dest: Box<Loc>, src: Box<Exp> },
+    PostDec{ loc: Box<Loc>},
+    PostInc{ loc: Box<Loc>},
+    Give   { output: Box<Exp>},
+    Take   { recipient: Box<Loc>},
+    Return { result: Option<Box<Exp>>},
     Exit,
-    Call(Rc<CallExp>),
+    Call(Box<CallExp>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Exp {
-    pub expr_type: Option<Rc<Type>>,
-    pub kind: Rc<ExpKind>,
-    pub span: RefCell<Span>
+    pub expr_type: Option<Box<Type>>,
+    pub kind: Box<ExpKind>,
+    pub span: Span
 }
 
 impl Exp {
-    pub fn new(kind: Rc<ExpKind>, left_span: usize, right_span: usize) -> Rc<Exp> {
-        Rc::new(Exp {
+    pub fn new(kind: Box<ExpKind>, left_span: usize, right_span: usize) -> Box<Exp> {
+        Box::new(Exp {
             expr_type: None,
             kind,
-            span: RefCell::new(Span::new(left_span, right_span))
+            span: Span::new(left_span, right_span)
         })
     }
 }
 
 impl Exp {
-    pub fn new_with_type(kind: Rc<ExpKind>, expr_type: PrimType, left_span: usize, right_span: usize) -> Rc<Exp> {
-        Rc::new(Exp {
-            expr_type: Some(Rc::new(Type{ 
+    pub fn new_with_type(kind: Box<ExpKind>, expr_type: PrimType, left_span: usize, right_span: usize) -> Box<Exp> {
+        Box::new(Exp {
+            expr_type: Some(Box::new(Type{ 
                 perfect: false, 
-                kind: Rc::new(TypeKind::Prim(expr_type))
+                kind: Box::new(TypeKind::Prim(expr_type))
             })),
             kind,
-            span: RefCell::new(Span::new(left_span, right_span))
+            span: Span::new(left_span, right_span)
         })
     }
 }
@@ -173,35 +171,35 @@ pub enum ExpKind {
     True,
     False,
     Magic,
-    UnaryExp(Rc<UnaryExp>),
-    BinaryExp(Rc<BinaryExp>),
-    CallExp(Rc<CallExp>),
+    UnaryExp(Box<UnaryExp>),
+    BinaryExp(Box<BinaryExp>),
+    CallExp(Box<CallExp>),
     IntLit(i32),
     StrLit(String),
-    Loc(Rc<Loc>),
+    Loc(Box<Loc>),
 }
 
 impl ExpKind {
-    pub fn new(kind: ExpKind) -> Rc<ExpKind> {
-        Rc::new(kind)
+    pub fn new(kind: ExpKind) -> Box<ExpKind> {
+        Box::new(kind)
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct UnaryExp {
-    pub exp: Rc<Exp>,
-    pub kind: Rc<UnaryExpKind>,
-    pub expr_type: Option<Rc<Type>>,
-    pub span: RefCell<Span>
+    pub exp: Box<Exp>,
+    pub kind: Box<UnaryExpKind>,
+    pub expr_type: Option<Box<Type>>,
+    pub span: Span
 }
 
 impl UnaryExp {
-    pub fn new(exp: Rc<Exp>, kind: UnaryExpKind, left_span: usize, right_span: usize) -> Rc<UnaryExp> {
-        Rc::new(UnaryExp {
+    pub fn new(exp: Box<Exp>, kind: UnaryExpKind, left_span: usize, right_span: usize) -> Box<UnaryExp> {
+        Box::new(UnaryExp {
             exp: exp,
-            kind: Rc::new(kind),
+            kind: Box::new(kind),
             expr_type: None,
-            span: RefCell::new(Span::new(left_span, right_span))
+            span: Span::new(left_span, right_span)
         })
     }
 }
@@ -214,21 +212,21 @@ pub enum UnaryExpKind {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct BinaryExp {
-    pub lhs: Rc<Exp>, 
-    pub rhs: Rc<Exp>,
-    pub kind: Rc<BinaryExpKind>,
-    pub expr_type: Option<Rc<Type>>,
-    pub span: RefCell<Span>,
+    pub lhs: Box<Exp>, 
+    pub rhs: Box<Exp>,
+    pub kind: Box<BinaryExpKind>,
+    pub expr_type: Option<Box<Type>>,
+    pub span: Span,
 }
 
 impl BinaryExp {
-    pub fn new(lhs: Rc<Exp>, rhs: Rc<Exp>, kind: BinaryExpKind, left_span: usize, right_span: usize) -> Rc<BinaryExp> {
-        Rc::new(BinaryExp {
+    pub fn new(lhs: Box<Exp>, rhs: Box<Exp>, kind: BinaryExpKind, left_span: usize, right_span: usize) -> Box<BinaryExp> {
+        Box::new(BinaryExp {
             lhs: lhs,
             rhs: rhs,
-            kind: Rc::new(kind),
+            kind: Box::new(kind),
             expr_type: None,
-            span: RefCell::new(Span::new(left_span, right_span))
+            span: Span::new(left_span, right_span)
         })
     }
 }
@@ -251,28 +249,28 @@ pub enum BinaryExpKind {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct CallExp {
-    pub name: Rc<Loc>, 
-    pub args: Vec<Rc<Exp>>,
-    pub fn_type: Option<Rc<Type>>,
-    pub span: RefCell<Span>
+    pub name: Box<Loc>, 
+    pub args: Vec<Box<Exp>>,
+    pub fn_type: Option<Type>,
+    pub span: Span
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Loc {
-    pub span: RefCell<Span>,
-    pub loc_type: Option<Rc<Type>>,
-    pub kind: Rc<LocKind>,
+    pub span: Span,
+    pub loc_type: Option<Type>,
+    pub kind: Box<LocKind>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum LocKind {
-    Id(Rc<Id>),
-    Loc { base_class: Rc<Loc>, field_name: Rc<Id> }
+    Id(Box<Id>),
+    Loc { base_class: Box<Loc>, field_name: Box<Id> }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Id {
     pub name: String,
-    pub span: RefCell<Span>,
-    pub id_type: RefCell<Option<Type>>,
+    pub span: Span,
+    pub id_type: Option<Type>,
 }
