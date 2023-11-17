@@ -16,7 +16,7 @@ use analysis::name::named_unparse;
 use analysis::_type::type_error_check;
 
 mod assembly;
-
+use assembly::three_ac::convert_3ac;
 
 use indoc::indoc;
 
@@ -31,7 +31,8 @@ enum ProcessMode {
     ParseCheck,
     Unparse,
     NamedUnparse,
-    TypeCheck
+    TypeCheck,
+    Generate3AC,
 }
 
 
@@ -58,14 +59,16 @@ impl Config {
                     "-u" => Some(ProcessMode::Unparse),
                     "-n" => Some(ProcessMode::NamedUnparse),
                     "-c" => Some(ProcessMode::TypeCheck),
+                    "-a" => Some(ProcessMode::Generate3AC),
                     _ => return Err(indoc!{"
                         The only supported options right now are:
                             [<inputFile.dm> -t <outputFile> ]: Tokenizes inputFile. Outputs result into <outputFile>.
                             [<inputFile.dm> -p]: Checks if inputFile has syntactically correct Drewno Mars code.
-                            [<inputFile.dm> <outputFile> -u]: Converts inputFile into canonical Drewno Mars code. Outputs result into <outputFile>.
-                            [<inputFile.dm> <outputFile> -n]: Converts inputFile into canonical Drewno Mars code with types. Outputs result into <outputFile>.
+                            [<inputFile.dm> -u <outputFile>]: Converts inputFile into canonical Drewno Mars code. Outputs result into <outputFile>.
+                            [<inputFile.dm> -n <outputFile>]: Converts inputFile into canonical Drewno Mars code with types. Outputs result into <outputFile>.
                             [<inputFile.dm> -c]: Checks if the Drewno Mars code in inputFile passes Type Analysis.
-                        
+                            [<inputFile.dm> -a <outputFile>]: Converts Drewno Mars code into an 3AC intermediate representation. Outputs result into <outputFile>.
+
                         Try again with a supported option.
 
                         Note: all <outputFile> arguments are optional. If no <outputFile> is given, output will be printed to console.
@@ -73,7 +76,7 @@ impl Config {
                 };
 
                 output_file = match arg_str {
-                    "-t" | "-u" | "-n" => {
+                    "-t" | "-u" | "-n" | "-a" => {
                         match args.next() {
                             Some(x) => Some(x),
                             None => None
@@ -169,6 +172,18 @@ pub fn run(config: Config) {
             let lexer = Lexer::new(&input[..]);
             match ProgramParser::new().parse(lexer) {
                 Ok(mut x) => { x.correct_span_rec(&line_bytes(input)); type_error_check(x); },
+                Err(x) => { eprintln!("Parse failed: {:?}", x); },
+            };
+        },
+
+        ProcessMode::Generate3AC => {
+            let mut output = config.output;
+
+            let lexer = Lexer::new(&input[..]);
+            match ProgramParser::new().parse(lexer) {
+                Ok(mut x) => output
+                    .write_all(convert_3ac(x).as_bytes())
+                    .expect("Error writing to output file."),
                 Err(x) => { eprintln!("Parse failed: {:?}", x); },
             };
         },
