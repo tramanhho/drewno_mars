@@ -15,6 +15,9 @@ mod analysis;
 use analysis::name::named_unparse;
 use analysis::_type::type_error_check;
 
+mod assembly;
+
+
 use indoc::indoc;
 
 pub struct Config {
