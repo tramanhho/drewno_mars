@@ -145,7 +145,7 @@ impl TypeAnalyzer {
 		let mut arg_types: Vec<Rc<Type>> = Vec::new();
 		for arg in func.args.iter() {
 			use crate::parser::ast::FormalDecl::*;
-			let arg = **arg;
+			let arg = *arg;
 			match arg {
 				VarDecl(x) => arg_types.push(x.var_type.clone()),
 				FormalDecl{id: _, formal_type} => arg_types.push(formal_type.clone())
