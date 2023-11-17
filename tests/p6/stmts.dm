@@ -1,6 +1,6 @@
 meow : () int { return 1; }
 
-main : () void {
+main : () int {
 	b : bool;
 	b = true;
 
@@ -11,5 +11,7 @@ main : () void {
 	take i;
 	today I don't feel like doing any work;
 	meow();
-	return;
+	c : int;
+	c = meow();
+	return meow();
 }

@@ -7,6 +7,14 @@ pub enum FunctionType {
     Local{ id: String }
 }
 
+fn quad_vec_to_string(quads: Vec<String>) -> String {
+    if quads.len() > 0 {
+        format!("{}{}", quads.join("\n\t"), "\n\t")
+    } else {
+        "".to_string()
+    }
+}
+
 pub trait ThreeAC {
     fn find_vars(&self, curr_fn: &FunctionType, vars: &mut IRSymbolTable);
     fn convert_3ac(&self, vars: &mut IRSymbolTable, counts: &mut Counter) -> String;
@@ -14,6 +22,11 @@ pub trait ThreeAC {
 pub trait Exp3AC {
     fn find_vars(&self, curr_fn: &FunctionType, vars: &mut IRSymbolTable);
     fn convert_3ac(&self, vars: &mut IRSymbolTable, counts: &mut Counter, curr: Vec<String>) -> (Vec<String>, String);
+}
+
+pub trait Stmt3AC {
+    fn find_vars(&self, curr_fn: &FunctionType, vars: &mut IRSymbolTable);
+    fn convert_3ac(&self, vars: &mut IRSymbolTable, counts: &mut Counter, leave_lbl: usize) -> String;
 }
 
 pub trait ExpKind3AC {
@@ -100,17 +113,17 @@ impl ThreeAC for FnDecl {
         output.push("".to_string());
 
         output.push(format!("{}:\tenter {}", id, id));
-        let old_lbl_counter = counts.lbl;
+        let leave_lbl = counts.lbl;
         counts.lbl += 1;
         counts.tmp = 0;
         for stmt in self.body.iter() {
-            let out = stmt.convert_3ac(vars, counts);
+            let out = stmt.convert_3ac(vars, counts, leave_lbl);
             if out.trim() != "" {
                 output.push(format!("\t{}", out));
             }
         }
-        output.push(format!("\tgoto lbl_{}", old_lbl_counter));
-        output.push(format!("lbl_{}:\tleave {}", old_lbl_counter, id));
+        // output.push(format!("\tgoto lbl_{}", old_lbl_counter));
+        output.push(format!("lbl_{}:\tleave {}", leave_lbl, id));
         output.join("\n")
     }
 }
@@ -136,7 +149,7 @@ impl ThreeAC for FormalDecl {
     }
 }
 
-impl ThreeAC for Stmt {
+impl Stmt3AC for Stmt {
     fn find_vars(&self, curr_fn: &FunctionType, vars: &mut IRSymbolTable) {
         use Stmt::*;
         match self {
@@ -146,17 +159,17 @@ impl ThreeAC for Stmt {
         };
     }
 
-    fn convert_3ac(&self, vars: &mut IRSymbolTable, counts: &mut Counter) -> String {
+    fn convert_3ac(&self, vars: &mut IRSymbolTable, counts: &mut Counter, leave_lbl: usize) -> String {
         use Stmt::*;
         match self {
-            Block(ref x) => x.convert_3ac(vars, counts),
-            Line(ref x) => x.convert_3ac(vars, counts),
-            VarDecl(ref x) => "".to_string(),
+            Block(ref x) => x.convert_3ac(vars, counts, leave_lbl),
+            Line(ref x) => x.convert_3ac(vars, counts, leave_lbl),
+            VarDecl(_) => "".to_string(),
         }
     }
 }
 
-impl ThreeAC for BlockStmt {
+impl Stmt3AC for BlockStmt {
     fn find_vars(&self, curr_fn: &FunctionType, vars: &mut IRSymbolTable) {
         use BlockStmt::*;
         match self {
@@ -180,30 +193,98 @@ impl ThreeAC for BlockStmt {
         }
     }
 
-    fn convert_3ac(&self, vars: &mut IRSymbolTable, counts: &mut Counter) -> String {
+    fn convert_3ac(&self, vars: &mut IRSymbolTable, counts: &mut Counter, leave_lbl: usize) -> String {
         use BlockStmt::*;
-        let output: Vec<String> = Vec::new();
+        let mut output: Vec<String> = Vec::new();
+        let is_while = match self {
+            While{cond: _, body: _} => true,
+            _ => false
+        };
+        let mut loop_head = 0;
+        if is_while {
+            loop_head = counts.lbl;
+            counts.lbl += 1;
+            output.push("".to_string());
+            output.push(format!("lbl_{}:\tnop", loop_head));
+        }
         match self {
             While{cond, body} | If{cond, body} => {
+                let (pre_cond, new_cond) = 
+                    cond.convert_3ac(vars, counts, Vec::new());
+                let after_lbl = counts.lbl;
+                counts.lbl += 1;
+                let pre_cond = quad_vec_to_string(pre_cond);
+                if pre_cond.trim()  != "".to_string() {
+                    output.push(format!("\t{}IFZ {} goto lbl_{}", pre_cond, new_cond, after_lbl));
+                } else {
+                    output.push(format!("IFZ {} goto lbl_{}", new_cond, after_lbl));
+                }
                 
-                "".to_string()
+                for stmt in body {
+                    output.push(format!("\t{}", stmt.convert_3ac(vars, counts, leave_lbl)));
+                }
+
+                if is_while {
+                    output.push(format!("\tgoto lbl_{}", loop_head));
+                }
+                output.push("".to_string());
+                output.push(format!("lbl_{}:\tnop", after_lbl));
             },
-            IfElse{cond, true_branch, false_branch} => "".to_string(),
+            IfElse{cond, true_branch, false_branch} => {
+                let (pre_cond, new_cond) = 
+                    cond.convert_3ac(vars, counts, Vec::new());
+                let after_lbl = counts.lbl;
+                counts.lbl += 1;
+                let false_lbl = counts.lbl;
+                counts.lbl += 1;
+                let pre_cond = quad_vec_to_string(pre_cond);
+
+                if pre_cond.trim()  != "".to_string() {
+                    output.push(format!("\t{}IFZ {} goto lbl_{}", pre_cond, new_cond, false_lbl));
+                } else {
+                    output.push(format!("IFZ {} goto lbl_{}", new_cond, false_lbl));
+                }
+                
+                for stmt in true_branch {
+                    output.push(format!("\t{}", stmt.convert_3ac(vars, counts, leave_lbl)));
+                }
+                output.push(format!("\tgoto lbl_{}", after_lbl));
+                output.push("".to_string());
+                output.push(format!("lbl_{}:\tnop", false_lbl));
+                for stmt in false_branch {
+                    output.push(format!("\t{}", stmt.convert_3ac(vars, counts, leave_lbl)));
+                }
+                output.push("".to_string());
+                output.push(format!("lbl_{}:\tnop", after_lbl));
+            },
         }
+        output.join("\n")
     }
 }
 
-impl ThreeAC for LineStmt {
+impl Stmt3AC for LineStmt {
     fn find_vars(&self, curr_fn: &FunctionType, vars: &mut IRSymbolTable) {
         self.kind.find_vars(curr_fn, vars);
     }
 
-    fn convert_3ac(&self, vars: &mut IRSymbolTable, counts: &mut Counter) -> String {
-        self.kind.convert_3ac(vars, counts)
+    fn convert_3ac(&self, vars: &mut IRSymbolTable, counts: &mut Counter, leave_lbl: usize) -> String {
+        self.kind.convert_3ac(vars, counts, leave_lbl)
     }
 }
 
-impl ThreeAC for LineStmtKind {
+fn handle_call(mut new: String, counts: &mut Counter) -> (String, String) {
+    let mut getret = "".to_string();
+
+    if new.contains("call") {
+        getret = format!("{}\n\tgetret [tmp{}]\n\t", new, counts.tmp);
+        new = format!("[tmp{}]", counts.tmp);
+        counts.tmp += 1;
+    }
+
+    (getret, new)
+}
+
+impl Stmt3AC for LineStmtKind {
     fn find_vars(&self, curr_fn: &FunctionType, vars: &mut IRSymbolTable) {
         use LineStmtKind::*;
 
@@ -218,19 +299,20 @@ impl ThreeAC for LineStmtKind {
         }
     }
 
-    fn convert_3ac(&self, vars: &mut IRSymbolTable, counts: &mut Counter) -> String {
+    fn convert_3ac(&self, vars: &mut IRSymbolTable, counts: &mut Counter, leave_lbl: usize) -> String {
         use LineStmtKind::*;
         match self {
 
             Assign{dest, src} => {
                 let (pre_src, new_src) = 
                     src.convert_3ac(vars, counts, Vec::new());
-                if pre_src.len() > 0 {
-                    format!("{}\n\t[{}] := {}", pre_src.join("\n\t"), dest, new_src)
+                let (getret, new_src) = handle_call(new_src, counts);
+                let pre_src = quad_vec_to_string(pre_src);
+                if pre_src.trim() != "".to_string() {
+                    format!("{}{}[{}] := {}", pre_src, getret, dest, new_src)
                 } else {
-                    format!("[{}] := {}", dest, new_src)
+                    format!("{}[{}] := {}", getret, dest, new_src)
                 }
-                
             },
 
             PostDec{loc} => format!("[{}] := {} ADD64 1", loc, loc),
@@ -240,11 +322,7 @@ impl ThreeAC for LineStmtKind {
             Give{output} => {
                 let (pre_out, new_output) = 
                     output.convert_3ac(vars, counts, Vec::new());
-                if pre_out.len() > 0 {
-                    format!("{}\n\tWRITE {}", pre_out.join("\n\t"), new_output)
-                } else {
-                    format!("WRITE {}", new_output)
-                }
+                format!("{}WRITE {}", quad_vec_to_string(pre_out), new_output)
             },
 
             Take{recipient} => format!("READ [{}]", recipient),
@@ -253,10 +331,12 @@ impl ThreeAC for LineStmtKind {
                 Some(x) => {
                     let (pre_out, new_ret) = 
                         x.convert_3ac(vars, counts, Vec::new());
-                    if pre_out.len() > 0 {
-                        format!("{}\n\tsetret {}", pre_out.join("\n\t"), new_ret)
+                    let (getret, new_ret) = handle_call(new_ret, counts);
+                    let pre_out = quad_vec_to_string(pre_out);
+                    if pre_out.trim() != "".to_string() {
+                        format!("{}{}setret {}\n\tgoto lbl_{}", pre_out, getret, new_ret, leave_lbl)
                     } else {
-                        format!("setret {}", new_ret)
+                        format!("{}setret {}\n\tgoto lbl_{}", getret, new_ret, leave_lbl)
                     }
                     
                 },
@@ -267,11 +347,8 @@ impl ThreeAC for LineStmtKind {
             Call(ref exp) => {
                 let (pre_call, new_call) = 
                     exp.convert_3ac(vars, counts, Vec::new());
-                if pre_call.len() > 0 {
-                    format!("{}\n\tcall {}", pre_call.join("\n\t"), new_call)
-                } else {
-                    format!("call {}", new_call)
-                }
+                // println!("owowowowowo{}", new_call);
+                format!("{}\n\t{}", quad_vec_to_string(pre_call), new_call)
             },
         }
     }
@@ -315,7 +392,7 @@ impl Exp3AC for ExpKind {
             CallExp(exp) => exp.convert_3ac(vars, counts, curr),
             IntLit(i32) => (curr, i32.to_string()),
             StrLit(str) => (curr, vars.id_from_string(str)),
-            Loc(loc) => (curr, loc.to_string()),
+            Loc(loc) => (curr, format!("[{}]", loc)),
             _ => (curr, "".to_string())
         }
     }
@@ -404,6 +481,6 @@ impl Exp3AC for CallExp {
             let _ : String;
             (curr, _) = arg.convert_3ac(vars, counts, curr);
         }
-        (curr, self.name.to_string())
+        (curr, format!("call {}", self.name.to_string()))
     }
 }

@@ -7,8 +7,8 @@ main : () void {
 }
 
 main2 : () int {
-	a : bool;
-	a = 24Kmagic;
+	a : bool = true;
+	// a = 24Kmagic;
     if (a) {
         return 1;
     } else {

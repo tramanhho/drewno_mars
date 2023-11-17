@@ -181,7 +181,7 @@ pub fn run(config: Config) {
 
             let lexer = Lexer::new(&input[..]);
             match ProgramParser::new().parse(lexer) {
-                Ok(mut x) => output
+                Ok(x) => output
                     .write_all(convert_3ac(x).as_bytes())
                     .expect("Error writing to output file."),
                 Err(x) => { eprintln!("Parse failed: {:?}", x); },

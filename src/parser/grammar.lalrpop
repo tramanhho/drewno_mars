@@ -187,9 +187,55 @@ pub LineStmt: Box<LineStmt> = {
     <l:@L> <fn_call: CallExp> <r:@R>            => LineStmt::new(LineStmtKind::Call(fn_call), l, r),
 }
 
-pub Exp: Box<Exp> = {
-    // #[precedence(level="2")] #[assoc(side="right")]
-    <l:@L> <lhs:Term> "EQUALS" <rhs:Exp> <r:@R> => Exp::new(
+pub Exp: Box<Exp> = {    
+    #[precedence(level="0")]
+    Term,
+
+    #[precedence(level="0")]
+    <l:@L> "NOT" <exp:Exp> <r:@R> => Exp::new(
+        Box::new(ExpKind::UnaryExp(UnaryExp::new(
+            exp, UnaryExpKind::Not, l, r
+        ))), l, r
+    ),
+
+    #[precedence(level="0")]
+    <l:@L> "DASH" <exp:Exp> <r:@R> => Exp::new(
+        Box::new(ExpKind::UnaryExp(UnaryExp::new(
+            exp, UnaryExpKind::Neg, l, r
+        ))), l, r
+    ),
+
+    #[precedence(level="1")] #[assoc(side="left")]
+    <l:@L> <lhs:Exp> "STAR" <rhs:Exp> <r:@R> => Exp::new(
+        Box::new(ExpKind::BinaryExp(BinaryExp::new(
+            lhs, rhs, BinaryExpKind::Times, l, r
+        ))), l, r
+    ),
+
+    #[precedence(level="1")] #[assoc(side="left")]
+    <l:@L> <lhs:Exp> "SLASH" <rhs:Exp> <r:@R> => Exp::new(
+        Box::new(ExpKind::BinaryExp(BinaryExp::new(
+            lhs, rhs, BinaryExpKind::Divide, l, r
+        ))), l, r
+    ),
+
+    #[precedence(level="2")] #[assoc(side="left")]
+    <l:@L> <lhs:Exp> "DASH" <rhs:Exp> <r:@R> => Exp::new(
+        Box::new(ExpKind::BinaryExp(BinaryExp::new(
+            lhs, rhs, BinaryExpKind::Minus, l, r
+        ))), l, r
+    ),
+
+    #[precedence(level="2")] #[assoc(side="left")]
+    <l:@L> <lhs:Exp> "CROSS" <rhs:Exp> <r:@R> => Exp::new(
+        Box::new(ExpKind::BinaryExp(BinaryExp::new(
+            lhs, rhs, BinaryExpKind::Plus, l, r
+        ))), l, r
+    ),
+
+
+    #[precedence(level="3")] #[assoc(side="left")]
+    <l:@L> <lhs:Exp> "EQUALS" <rhs:Exp> <r:@R> => Exp::new(
         Box::new(ExpKind::BinaryExp(BinaryExp::new(
             lhs,
             rhs,
@@ -197,7 +243,8 @@ pub Exp: Box<Exp> = {
         ))), l, r
     ),
 
-    <l:@L> <lhs:Term> "NOTEQUALS" <rhs:Exp> <r:@R> => Exp::new(
+    #[precedence(level="3")] #[assoc(side="left")]
+    <l:@L> <lhs:Exp> "NOTEQUALS" <rhs:Exp> <r:@R> => Exp::new(
         Box::new(ExpKind::BinaryExp(BinaryExp::new(
             lhs,
             rhs,
@@ -205,7 +252,8 @@ pub Exp: Box<Exp> = {
         ))), l, r
     ),
 
-    <l:@L> <lhs:Term> "GREATER" <rhs:Exp> <r:@R> => Exp::new(
+    #[precedence(level="3")] #[assoc(side="left")]
+    <l:@L> <lhs:Exp> "GREATER" <rhs:Exp> <r:@R> => Exp::new(
         Box::new(ExpKind::BinaryExp(BinaryExp::new(
             lhs,
             rhs,
@@ -213,7 +261,8 @@ pub Exp: Box<Exp> = {
         ))), l, r
     ),
 
-    <l:@L> <lhs:Term> "GREATEREQ" <rhs:Exp> <r:@R> => Exp::new(
+    #[precedence(level="3")] #[assoc(side="left")]
+    <l:@L> <lhs:Exp> "GREATEREQ" <rhs:Exp> <r:@R> => Exp::new(
         Box::new(ExpKind::BinaryExp(BinaryExp::new(
             lhs,
             rhs,
@@ -221,7 +270,8 @@ pub Exp: Box<Exp> = {
         ))), l, r
     ),
 
-    <l:@L> <lhs:Term> "LESS" <rhs:Exp> <r:@R> => Exp::new(
+    #[precedence(level="3")] #[assoc(side="left")]
+    <l:@L> <lhs:Exp> "LESS" <rhs:Exp> <r:@R> => Exp::new(
         Box::new(ExpKind::BinaryExp(BinaryExp::new(
             lhs,
             rhs,
@@ -229,68 +279,30 @@ pub Exp: Box<Exp> = {
         ))), l, r
     ),
 
-    <l:@L> <lhs:Term> "LESSEQ" <rhs:Exp> <r:@R> => Exp::new(
+    #[precedence(level="3")] #[assoc(side="left")]
+    <l:@L> <lhs:Exp> "LESSEQ" <rhs:Exp> <r:@R> => Exp::new(
         Box::new(ExpKind::BinaryExp(BinaryExp::new(
             lhs,
             rhs,
             BinaryExpKind::LessEq, l, r
         ))), l, r
-    ),
+    ), 
 
-    // #[precedence(level="1")]
-    BabyExp,
-};
-
-pub BabyExp: Box<Exp> = {
-    <l:@L> <lhs:Term> "DASH" <rhs:Exp> <r:@R> => Exp::new(
-        Box::new(ExpKind::BinaryExp(BinaryExp::new(
-            lhs, rhs, BinaryExpKind::Minus, l, r
-        ))), l, r
-    ),
-
-    <l:@L> <lhs:Term> "CROSS" <rhs:Exp> <r:@R> => Exp::new(
-        Box::new(ExpKind::BinaryExp(BinaryExp::new(
-            lhs, rhs, BinaryExpKind::Plus, l, r
-        ))), l, r
-    ),
-
-    <l:@L> <lhs:Term> "STAR" <rhs:Exp> <r:@R> => Exp::new(
-        Box::new(ExpKind::BinaryExp(BinaryExp::new(
-            lhs, rhs, BinaryExpKind::Times, l, r
-        ))), l, r
-    ),
-
-    <l:@L> <lhs:Term> "SLASH" <rhs:Exp> <r:@R> => Exp::new(
-        Box::new(ExpKind::BinaryExp(BinaryExp::new(
-            lhs, rhs, BinaryExpKind::Divide, l, r
-        ))), l, r
-    ),
-
-    <l:@L> <lhs:Term> "AND" <rhs:Exp> <r:@R> => Exp::new(
+    #[precedence(level="4")] #[assoc(side="left")]
+    <l:@L> <lhs:Exp> "AND" <rhs:Exp> <r:@R> => Exp::new(
         Box::new(ExpKind::BinaryExp(BinaryExp::new(
             lhs, rhs, BinaryExpKind::And, l, r
         ))), l, r
     ), 
 
-    <l:@L> <lhs:Term> "OR" <rhs:Exp> <r:@R> => Exp::new(
+    #[precedence(level="5")] #[assoc(side="left")]
+    <l:@L> <lhs:Exp> "OR" <rhs:Exp> <r:@R> => Exp::new(
         Box::new(ExpKind::BinaryExp(BinaryExp::new(
             lhs, rhs, BinaryExpKind::Or, l, r
         ))), l, r
     ), 
 
-    <l:@L> "NOT" <exp:Exp> <r:@R> => Exp::new(
-        Box::new(ExpKind::UnaryExp(UnaryExp::new(
-            exp, UnaryExpKind::Not, l, r
-        ))), l, r
-    ), 
-
-    <l:@L> "DASH" <exp:Exp> <r:@R> => Exp::new(
-        Box::new(ExpKind::UnaryExp(UnaryExp::new(
-            exp, UnaryExpKind::Neg, l, r
-        ))), l, r
-    ), 
-    
-    Term,
+     
 };
 
 pub CallExp: Box<CallExp> = {

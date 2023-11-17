@@ -3,5 +3,5 @@ j : int;
 
 main : () void {
     c : int;
-    c = i * j - 3 + 1;
+    c =  -i * 1 / 2 + 3 - 4 * 5 + 6 / 7;
 }
