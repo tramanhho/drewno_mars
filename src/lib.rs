@@ -17,6 +17,7 @@ use analysis::_type::type_error_check;
 
 mod assembly;
 use assembly::three_ac::convert_3ac;
+use assembly::x86::convert_x86;
 
 use indoc::indoc;
 
@@ -33,6 +34,7 @@ enum ProcessMode {
     NamedUnparse,
     TypeCheck,
     Generate3AC,
+    X86,
 }
 
 
@@ -60,6 +62,7 @@ impl Config {
                     "-n" => Some(ProcessMode::NamedUnparse),
                     "-c" => Some(ProcessMode::TypeCheck),
                     "-a" => Some(ProcessMode::Generate3AC),
+                    "-o" => Some(ProcessMode::X86),
                     _ => return Err(indoc!{"
                         The only supported options right now are:
                             [<inputFile.dm> -t <outputFile> ]: Tokenizes inputFile. Outputs result into <outputFile>.
@@ -68,7 +71,7 @@ impl Config {
                             [<inputFile.dm> -n <outputFile>]: Converts inputFile into canonical Drewno Mars code with types. Outputs result into <outputFile>.
                             [<inputFile.dm> -c]: Checks if the Drewno Mars code in inputFile passes Type Analysis.
                             [<inputFile.dm> -a <outputFile>]: Converts Drewno Mars code into an 3AC intermediate representation. Outputs result into <outputFile>.
-
+                            [<inputFile.dm> -o <outputFile>]: Converts Drewno Mars code into x86 assembly. Outputs result into <outputFile>.
                         Try again with a supported option.
 
                         Note: all <outputFile> arguments are optional. If no <outputFile> is given, output will be printed to console.
@@ -76,7 +79,7 @@ impl Config {
                 };
 
                 output_file = match arg_str {
-                    "-t" | "-u" | "-n" | "-a" => {
+                    "-t" | "-u" | "-n" | "-a" | "-o" => {
                         match args.next() {
                             Some(x) => Some(x),
                             None => None
@@ -183,6 +186,18 @@ pub fn run(config: Config) {
             match ProgramParser::new().parse(lexer) {
                 Ok(x) => output
                     .write_all(convert_3ac(x).as_bytes())
+                    .expect("Error writing to output file."),
+                Err(x) => { eprintln!("Parse failed: {:?}", x); },
+            };
+        },
+
+        ProcessMode::X86 => {
+            let mut output = config.output;
+
+            let lexer = Lexer::new(&input[..]);
+            match ProgramParser::new().parse(lexer) {
+                Ok(x) => output
+                    .write_all(convert_x86(convert_3ac(x)).as_bytes())
                     .expect("Error writing to output file."),
                 Err(x) => { eprintln!("Parse failed: {:?}", x); },
             };

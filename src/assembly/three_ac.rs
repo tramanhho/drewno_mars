@@ -1,9 +1,11 @@
-mod three_ac_node;
 use std::collections::HashMap;
+use std::fmt::{Display, Formatter, Error};
+
+mod three_ac_node;
 use three_ac_node::ThreeAC;
 use three_ac_node::FunctionType;
-use crate::parser::ast::Program;
-use std::fmt::{Display, Formatter, Error};
+
+use crate::parser::ast::{PrimType, Program, TypeKind};
 
 pub fn convert_3ac(prog: Box<Program>) -> String {
     let mut vars: IRSymbolTable = IRSymbolTable {
@@ -23,11 +25,39 @@ pub fn convert_3ac(prog: Box<Program>) -> String {
     prog.convert_3ac(&mut vars, &mut counts)
 }
 
+#[derive(Copy, Clone)]
+pub enum Variable3ACType {
+    Int,
+    Bool,
+    String
+}
+
+impl Display for Variable3ACType {
+    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+        match self {
+            Variable3ACType::Int => write!(fmt, "int"),
+            Variable3ACType::Bool => write!(fmt, "bool"),
+            Variable3ACType::String => write!(fmt, "string"),
+        }
+    }
+}
+pub struct Variable3AC {
+    id: String,
+    var_type: Variable3ACType
+}
+
+impl Display for Variable3AC {
+    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+        write!(fmt, "{}-{}", self.id, self.var_type)
+    }
+}
+
 pub struct IRSymbolTable {
-    globals: Vec<String>,
+    globals: Vec<Variable3AC>,
     strings: Vec<String>,
     functions: HashMap<String, FunctionValue>
 }
+
 
 pub struct Counter {
     lbl: usize,
@@ -35,13 +65,15 @@ pub struct Counter {
 }
 
 struct FunctionValue {
-    locals: Vec<String>,
-    tmps: usize
+    locals: Vec<Variable3AC>,
+    tmps: Vec<Variable3ACType>
 }
 
 impl Display for FunctionValue {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-        write!(fmt, "\t[{}]\n\tTemps: {}", self.locals.join(","), self.tmps)
+        write!(fmt, "\t[{}]\n\tTemps: [{}]", 
+        self.locals.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(","), 
+        self.tmps.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(","))
     }
 }
 
@@ -49,7 +81,7 @@ impl FunctionValue {
     fn new() -> FunctionValue {
         FunctionValue { 
             locals: Vec::new(), 
-            tmps: 0 
+            tmps: Vec::new()
         }
     }
 }
@@ -71,14 +103,26 @@ impl Display for IRSymbolTable {
 }
 
 impl IRSymbolTable {
-    fn add_var(&mut self, scope: &FunctionType, var_id: String) {
+    fn add_var(&mut self, scope: &FunctionType, var_id: String, var_type: TypeKind) {
         use FunctionType::*;
-
+        use TypeKind::*;
+        use PrimType::*;
+        let var_type = match var_type {
+            Prim(x) => match x {
+                Bool =>  Variable3ACType::Bool,
+                _ => Variable3ACType::Int,
+            }
+            _ => Variable3ACType::Int
+        };
+        let var = Variable3AC {
+            id: var_id,
+            var_type: var_type
+        };
         match scope {
-            Global => {self.globals.push(var_id);},
+            Global => {self.globals.push(var);},
             Local { id } => {
                 self.functions.entry(id.to_owned())
-                    .and_modify(|val| val.locals.push(var_id))
+                    .and_modify(|val| val.locals.push(var))
                     .or_insert(FunctionValue::new());
             }
         }
@@ -86,24 +130,24 @@ impl IRSymbolTable {
 
     fn add_fn(&mut self, id: String) {
         self.functions.insert(id.clone(), FunctionValue::new());
-        self.globals.push(id);
+        // self.globals.push(id);                  // TODO: took this out to help x86, remove later
     }
 
     fn add_string(&mut self, str: String) {
         self.strings.push(str);
     }
 
-    fn inc_fn_tmps(&mut self, curr_fn: &FunctionType) {
+    fn inc_fn_tmps(&mut self, curr_fn: &FunctionType, tmp_type: Variable3ACType) {
         let fn_id = match curr_fn {
             FunctionType::Global => return,
             FunctionType::Local { id } => id.to_owned()
         };
 
         self.functions.entry(fn_id)
-            .and_modify(|val| val.tmps += 1)
+            .and_modify(|val| val.tmps.push(tmp_type))
             .or_insert_with(|| {
                 let mut val = FunctionValue::new();
-                val.tmps += 1;
+                val.tmps.push(tmp_type);
                 val
             });
     }
@@ -111,8 +155,8 @@ impl IRSymbolTable {
     fn globals(&self) -> String {
         let mut output : Vec::<String> = Vec::new();
 
-        for id in self.globals.iter() {
-            output.push(format!("{}", id));
+        for gbl in self.globals.iter() {
+            output.push(format!("{}", gbl));
         }
 
         for (i, str) in self.strings.iter().enumerate() {
@@ -131,12 +175,12 @@ impl IRSymbolTable {
         };
 
         for local in val.locals.iter() {
-            output.push(format!("{} (local var of 8 bytes)", local));
+            output.push(format!("{}", local));
         }
 
         
-        for i in 0..val.tmps {
-            output.push(format!("tmp{} (tmp var of 8 bytes)", i));
+        for (i, tmp_type) in val.tmps.iter().enumerate() {
+            output.push(format!("tmp{}-{}", i, tmp_type));
         }
 
         output.join("\n")

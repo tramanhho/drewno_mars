@@ -4,6 +4,9 @@ cov-options = --ignore-filename-regex='(/.cargo/registry)|(grammar.rs)|(fast_loc
 all: 
 	cargo build; cd target/debug; mv ${projectname} ../../dmc; cd ../.. 
 
+stddrewno_mars.o: stddrewno_mars.c
+	gcc -c stddrewno_mars.c
+
 cov-report: test.profdata
 	llvm-cov report ${cov-options}
 

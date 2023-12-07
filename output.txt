@@ -1,0 +1,32 @@
+[BEGIN GLOBALS]
+meow
+main
+[END GLOBALS]
+	
+[BEGIN meow LOCALS]
+
+[END meow LOCALS]
+
+meow:	enter meow
+	setret 1
+	goto lbl_0
+lbl_0:	leave meow
+	
+[BEGIN main LOCALS]
+c (local var of 8 bytes)
+tmp0 (tmp var of 8 bytes)
+tmp1 (tmp var of 8 bytes)
+tmp2 (tmp var of 8 bytes)
+[END main LOCALS]
+
+main:	enter main
+	
+	call meow
+	call meow
+	getret [tmp0]
+	[c] := [tmp0]
+	call meow
+	getret [tmp1]
+	setret [tmp1]
+	goto lbl_1
+lbl_1:	leave main

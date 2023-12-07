@@ -1,5 +1,5 @@
 use crate::parser::ast::*;
-use super::{IRSymbolTable, Counter};
+use super::{IRSymbolTable, Counter, Variable3ACType};
 
 #[derive(Debug)]
 pub enum FunctionType {
@@ -81,16 +81,16 @@ impl ThreeAC for Decl {
 
 impl ThreeAC for VarDecl {
     fn find_vars(&self, curr_fn: &FunctionType, vars: &mut IRSymbolTable) {
-        vars.add_var(curr_fn, self.id.to_string());
+        vars.add_var(curr_fn, self.id.to_string(), *self.var_type.clone().kind);
     }
 
     fn convert_3ac(&self, _vars: &mut IRSymbolTable, _counts: &mut Counter) -> String {
-        "".to_string() // drew davidson forgor to add so we don't need to ^-^ 
-
-        // match &self.init_val {
-        //     Some(v) => "".to_string(),
-        //     None => "".to_string(),
-        // }
+        // "".to_string() // drew davidson forgor to add so we don't need to ^-^ 
+        // TODO: fix this maybe
+        match &self.init_val {
+            Some(_) => "".to_string(),
+            None => "".to_string(),
+        }
     }
 }
 
@@ -133,8 +133,8 @@ impl ThreeAC for FormalDecl {
         use self::FormalDecl::*;
         match self {
             VarDecl(ref x) => x.find_vars(curr_fn, vars),
-            FormalDecl{id, formal_type: _,} => {
-                vars.add_var(curr_fn, id.to_string())
+            FormalDecl{id, formal_type,} => {
+                vars.add_var(curr_fn, id.to_string(), *formal_type.clone().kind)
             }
         }
     }
@@ -315,14 +315,14 @@ impl Stmt3AC for LineStmtKind {
                 }
             },
 
-            PostDec{loc} => format!("[{}] := {} ADD64 1", loc, loc),
+            PostDec{loc} => format!("[{}] := [{}] ADD64 1", loc, loc),
 
-            PostInc{loc} => format!("[{}] := {} SUB64 1", loc, loc),
+            PostInc{loc} => format!("[{}] := [{}] SUB64 1", loc, loc),
 
             Give{output} => {
                 let (pre_out, new_output) = 
                     output.convert_3ac(vars, counts, Vec::new());
-                format!("{}WRITE {}", quad_vec_to_string(pre_out), new_output)
+                format!("{}WRITE [{}]", quad_vec_to_string(pre_out), new_output)
             },
 
             Take{recipient} => format!("READ [{}]", recipient),
@@ -382,25 +382,27 @@ impl Exp3AC for ExpKind {
         use ExpKind::*;
 
         match self {
-            True => (curr, "1".to_string()),
-            False => (curr, "0".to_string()),
-            // Magic => {
-            //     curr.push()
-            // },
+            True => (curr, "true".to_string()),
+            False => (curr, "false".to_string()),
+            Magic => (curr, "24Kmagic".to_string()),
             UnaryExp(exp) => exp.convert_3ac(vars, counts, curr),
             BinaryExp(exp) => exp.convert_3ac(vars, counts, curr),
             CallExp(exp) => exp.convert_3ac(vars, counts, curr),
             IntLit(i32) => (curr, i32.to_string()),
             StrLit(str) => (curr, vars.id_from_string(str)),
-            Loc(loc) => (curr, format!("[{}]", loc)),
-            _ => (curr, "".to_string())
+            Loc(loc) => (curr, format!("[{}]", loc))
         }
     }
 }
 
 impl Exp3AC for UnaryExp {
     fn find_vars(&self, curr_fn: &FunctionType, vars: &mut IRSymbolTable) {
-        vars.inc_fn_tmps(curr_fn);
+        let exp_type = match *self.kind.clone() {
+            UnaryExpKind::Neg => Variable3ACType::Int,
+            UnaryExpKind::Not => Variable3ACType::Bool
+        };
+        
+        vars.inc_fn_tmps(curr_fn, exp_type);
         self.exp.find_vars(curr_fn, vars);
     }
 
@@ -427,7 +429,24 @@ impl ExpKind3AC for UnaryExpKind {
 
 impl Exp3AC for BinaryExp {
     fn find_vars(&self, curr_fn: &FunctionType, vars: &mut IRSymbolTable) {
-        vars.inc_fn_tmps(curr_fn);
+        use BinaryExpKind::*;
+        use TypeKind::*;
+        use PrimType::*;
+        let exp_type = match *self.kind.clone() {
+            And | Or => Variable3ACType::Bool,
+            Equals | NotEquals => match self.lhs.expr_type.clone() {
+                Some(x) => match *x.clone().kind {
+                    Prim(prim) => match prim {
+                        Bool => Variable3ACType::Bool,
+                        _ => Variable3ACType::Int
+                    },
+                    _ => Variable3ACType::Int
+                },
+                None => Variable3ACType::Int
+            },
+            _ => Variable3ACType::Int
+        };
+        vars.inc_fn_tmps(curr_fn, exp_type);
 
         self.lhs.find_vars(curr_fn, vars);
         self.rhs.find_vars(curr_fn, vars);
@@ -470,7 +489,18 @@ impl ExpKind3AC for BinaryExpKind {
 
 impl Exp3AC for CallExp {
     fn find_vars(&self, curr_fn: &FunctionType, vars: &mut IRSymbolTable) {
-        vars.inc_fn_tmps(curr_fn);
+        use PrimType::*;
+        let call_exp_type = match self.fn_type.clone() {
+            Some(x) => match *x.kind.clone() {
+                TypeKind::Prim(prim) => match prim {
+                    Bool => Variable3ACType::Bool,
+                    _ => Variable3ACType::Int
+                },
+                _ => Variable3ACType::Int
+            }
+            None => Variable3ACType::Int
+        };
+        vars.inc_fn_tmps(curr_fn, call_exp_type);
         for arg in self.args.iter() {
             arg.find_vars(curr_fn, vars);
         }
