@@ -1,17 +1,18 @@
-main : () void {
-    if (true) {
-        give "hi";
-    } else {
-        give "bye";
-    }
-}
+// main : () void {
+//     if (true) {
+//         give "hi";
+//     } else {
+//         give "bye";
+//     }
+// }
 
-main2 : () int {
+main : () int {
 	a : bool = true;
-	// a = 24Kmagic;
+	a = 24Kmagic;
     if (a) {
-        return 1;
+        give 1;
     } else {
-        return 0;
+        give 0;
     }
+    return 0;
 }

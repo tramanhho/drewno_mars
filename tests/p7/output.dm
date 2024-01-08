@@ -1,5 +1,6 @@
 a : int;
 
 main : () int {
-	take a;
+	a = 1;
+	give a;
 }

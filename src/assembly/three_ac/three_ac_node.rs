@@ -320,9 +320,17 @@ impl Stmt3AC for LineStmtKind {
             PostInc{loc} => format!("[{}] := [{}] SUB64 1", loc, loc),
 
             Give{output} => {
-                let (pre_out, new_output) = 
+                let (pre_out, mut new_output) = 
                     output.convert_3ac(vars, counts, Vec::new());
-                format!("{}WRITE [{}]", quad_vec_to_string(pre_out), new_output)
+                new_output = if new_output.contains("[") {
+                    let mut new_output: std::str::Chars<'_> = new_output.chars();
+                    new_output.next();
+                    new_output.next_back();
+                    new_output.as_str().to_string()
+                } else {
+                    new_output
+                };
+                format!("{}WRITE {}", quad_vec_to_string(pre_out), new_output)
             },
 
             Take{recipient} => format!("READ [{}]", recipient),

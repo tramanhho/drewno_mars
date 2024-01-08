@@ -4,5 +4,6 @@ main : () int {
     meow();
 	c : int;
 	c = meow();
-	return meow();
+	give meow();
+	return 0;
 }

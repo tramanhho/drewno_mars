@@ -14,13 +14,14 @@ pub fn convert_x86(ir: String) -> String {
 		None => "".to_string()
 	});
 	
-	output.push("\n_start:".to_string());
+	output.push("\n.text".to_string());
 
 	for function in ir {
 		output.push(table.translate_fn(function));
 	}
 
-	output.push("\n\tmovq $60,\t%rax\n\tmovq $4,\t%rdi\n\t\n\tsyscall".to_string());
+	output.push("\n\tmovq $60,\t%rax\n\tmovq $1,\t%rdi\n\t\n\tsyscall".to_string());
+	output.push("".to_string());
     output.join("\n")
 }
 
@@ -81,7 +82,7 @@ impl Display for FnSymbolTableWrapper {
 impl FnSymbolTable for FnSymbolTableWrapper {
 	fn translate_globals(&mut self, globals: &str) -> String {
 		let mut output : Vec<String> = Vec::new();
-		output.push(".globl _start".to_string());
+		output.push(".globl main".to_string());
 		let mut globals = globals.split('\n').collect::<VecDeque<&str>>();
 		
 		// whitespace byebye 
@@ -120,7 +121,7 @@ impl FnSymbolTable for FnSymbolTableWrapper {
 					None => ("", "")
 				};
 				
-				output.push(format!("{lbl}: .asciiz {string}"));
+				output.push(format!("{lbl}: .asciz {string}"));
 				
 				label = lbl.to_string();
 				symbol = SemanticSymbol {
@@ -135,7 +136,7 @@ impl FnSymbolTable for FnSymbolTableWrapper {
 					"bool" => Variable3ACType::Bool,
 					_ => Variable3ACType::Int
 				};
-				output.push(format!("{label}: .quad 0"));
+				output.push(format!("gbl_{label}: .quad 0"));
 
 				symbol = SemanticSymbol {
 					location: format!("(gbl_{})", label),
@@ -175,15 +176,20 @@ impl FnSymbolTable for FnSymbolTableWrapper {
 		let mut function = function.split("LOCALS]\n").collect::<Vec<&str>>().into_iter();
 		
 		function.next(); //extra info
-
+		
 		let locals = match function.next() {
 			Some(x) => x,
 			None => return "".to_string()
 		};
-		let mut locals = locals.split("\n").collect::<Vec<&str>>();
-		locals.pop();
-		// println!("{:?}", locals);
-		let num_locals = self.populate_fn(locals);
+		// println!("{}", &self);
+		let num_locals : usize;
+		if !locals.starts_with("\n[END ") {
+			let mut locals = locals.split("\n").collect::<Vec<&str>>();
+			locals.pop();
+			num_locals = self.populate_fn(locals);
+		} else {
+			num_locals = 0;
+		}
 
 		// output.push(function_prologue(num_locals));
 		let code = match function.next() {
@@ -248,7 +254,7 @@ impl FnSymbolTable for FnSymbolTableWrapper {
 	fn translate_assign(&self, statement: &str) -> String {
 		let ops = statement.split(' ').collect::<Vec<&str>>();
 		let (_, dest) = self.get_loc(ops[0].trim());
-		
+
 		// direct assign, no math involved
 		if ops.len() == 3 {
 			let src = ops[2];
@@ -287,8 +293,8 @@ impl FnSymbolTable for FnSymbolTableWrapper {
 
 	fn translate_multdiv(&self, ops: Vec<&str>) -> String {
 		let quad = get_operation_quad(ops[3]);
-		let (prepend1, src1) = self.parse_loc(ops[2]);
-		let (prepend2, src2) = self.parse_loc(ops[4]);
+		let (prepend1, src1) = self.parse_loc(ops[2].trim());
+		let (prepend2, src2) = self.parse_loc(ops[4].trim());
 		let (prepend3, dest) = self.parse_loc(ops[0].trim());
 		return format!(
 			"{}{}\tmovq {},\t%rax\n\tmovq {},\t%rbx\n\t{}\t\t%rbx\n{}\tmovq %rax,\t{}", 
@@ -401,7 +407,7 @@ fn get_operation_quad(operation: &str) -> &str {
 		"NEG64" => "notq",
 		"ADD64" => "addq",
 		"SUB64" => "subq",
-		"MULT64" => "imultq",
+		"MULT64" => "imulq",
 		"DIV64" => "idivq",
 		"AND64" => "andq",
 		"OR64" => "orq",
