@@ -1,7 +1,0 @@
-FATAL [1,1] - [1,5]: String literal with bad escape sequence detected
-FATAL [1,6] - [1,10]: String literal with bad escape sequence detected
-FATAL [1,11] - [1,15]: String literal with bad escape sequence detected
-FATAL [1,29] - [1,33]: String literal with bad escape sequence detected
-FATAL [1,47] - [1,51]: String literal with bad escape sequence detected
-FATAL [1,52] - [1,56]: String literal with bad escape sequence detected
-FATAL [1,70] - [1,74]: String literal with bad escape sequence detected

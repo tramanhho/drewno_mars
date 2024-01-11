@@ -108,81 +108,6 @@ fn parse_program() {
         };",
     ];
     
-    let _test = "a(b, c, d)";
-
-    let test_suite = r#"
-    a : int ;
-    b : bool ;
-    c : void ;
-    d : perfect void ;
-    e : f ;
-    g : perfect h ;
-    //i : perfect j = true == true != true;
-    //i : perfect j = true - true + true * true / true and true or true == true != true < true <= true > true >= true ;
-    k : perfect l = true - true ;
-    m : perfect n = true + true ;
-    o : perfect p = true * true ;
-    q : perfect r = true / true ;
-    s : perfect t = true and true ;
-    u : perfect v = true or true ;
-    w : perfect x = true == true ;
-    y : perfect z = true != true ;
-    a : perfect b = true < true ;
-    c : perfect d = true <= true ;
-    e : perfect f = true > true ;
-    g : perfect h = true >= true ;
-    i : perfect j = ! true ;
-    k : perfect l = - true ;
-    m : perfect n = true ;
-    o : perfect p = q ;
-    r : perfect s = t -- u ;
-    v : perfect w = 7 ;
-    x : perfect y = "seven" ;
-    x : perfect y = "sdsd{sev" ;
-    x : perfect y = "sdsd}sdsd" ;
-    x : perfect y = "se24rwwfa3a9u09u 0 jh9fps-ic[n" ;
-    z : perfect a = true ;
-    b : perfect c = false ;
-    d : perfect e = magic ;
-    f : perfect g = ( true ) ;
-    h : perfect i = j ( ) ;
-    
-    k : class { l : int ; l : int ; l : int ; } ;
-    //m : class { n : (  ) int {  } ; } ;
-    o : class {  } ;
-    
-    
-    p : (  ) int { return ; return ; }
-    q : (  ) int { if ( true ) {  } if ( true ) { return; } return; }
-    r : (  ) int { if ( true ) {  } return ; }
-    
-    s : (  ) int { t : int ; }
-    u : (  ) int { v = true ; }
-    w : (  ) int { x -- ; }
-    y : (  ) int { z ++ ; }
-    a : (  ) int { give true ; }
-    b : (  ) int { take c ; }
-    d : (  ) int { return true ; }
-    e : (  ) int { return ; }
-    f : (  ) int { today I don't feel like doing any work ; }
-    
-    g : (  ) int { h ( ) ; }
-    i : (  ) int { j ( true ) ; }
-    k : (  ) int { l ( true , true ) ; }
-    
-    m : (  ) int { while ( true ) {  } }
-    n : (  ) int { if ( true ) {  } }
-    o : (  ) int { if ( true ) {  } else {  } }
-    p : (  ) int {  }
-    q : ( r : int ) int {  }
-    s : ( t : int , u : int ) int {  }
-    "#;
-
-    // println!("{test_suite}");
-    
-    println!("{:?}",ProgramParser::new().parse(Lexer::new(test_suite)));
-    // println!("{}",unparse(test_suite));
-    // println!("{:?}",ProgramParser::new().parse(Lexer::new("s : (  ) int { t : int ;}")));
     test_inputs(program_good, Some(program_bad), &ParserType::Program);
 }
 
@@ -196,7 +121,7 @@ fn parse_decl() {
     ];
 
     let d_bad = vec![
-        "",
+        "int : a;",
     ];
     
     test_inputs(d_good, Some(d_bad), &ParserType::Decl);
@@ -269,7 +194,6 @@ fn parse_class_decl() {
         "a : class {b : int; c : int;};",
     ];
     
-    // println!("{:?}", ClassDeclParser::new().parse(Lexer::new("a : class {};")));
     test_inputs(cd_good, None, &ParserType::ClassDecl);
 }
 
