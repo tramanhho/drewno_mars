@@ -28,7 +28,7 @@ impl fmt::Display for LexingError {
             LexingError::StringliteralBadEscape => write!(f, "String literal with bad escape sequence detected"),
             LexingError::StringliteralUnterminated => write!(f, "Unterminated string literal detected"),
             LexingError::StringliteralUnterminatedBadEscape => write!(f, "Unterminated string literal with bad escape sequence detected"),
-            LexingError::Illegal(v) => write!(f, "Illegal character: {}", v),
+            LexingError::Illegal(v) => write!(f, "Illegal character {}", v),
             LexingError::NonAsciiCharacter => write!(f, "Non ASCII character detected"),
         }
     }

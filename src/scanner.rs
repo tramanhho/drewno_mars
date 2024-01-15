@@ -8,7 +8,7 @@ pub mod lexer;
 
 pub fn tokenizer(input: Vec<&str>, mut tokens: Box<dyn Write>) {
     let mut scanner = Scanner::new();
-
+    
     // processing 
     for line in input.iter() {
         let (output, error) = scanner.tokenize_line(&line);
@@ -17,9 +17,9 @@ pub fn tokenizer(input: Vec<&str>, mut tokens: Box<dyn Write>) {
     }
     
     let eof = if *input.last().unwrap() == "" {
-        format!("EOF [{},1]\n", scanner.row + 1)
+        format!("EOF [{},1]", scanner.row + 1)
     } else {
-        format!("EOF [{},{}]\n", scanner.row, scanner.last_col)
+        format!("EOF [{},{}]", scanner.row, scanner.last_col)
     };
     
     tokens.write_all(eof.as_bytes()).expect("Error writing to file.");
@@ -56,7 +56,7 @@ impl Scanner {
                     text = format!("{}{:15}\t[{},{}]\n", text, token, self.row, range.start);
                 }
                 Err(e) => {
-                    errors = format!("{}FATAL [{},{}] - [{},{}]: {}\n", errors, self.row, range.start, self.row, range.end, e);
+                    errors = format!("{}FATAL [{},{}]-[{},{}]: {}\n", errors, self.row, range.start, self.row, range.end, e);
                 }
             }
             self.last_col = range.end;

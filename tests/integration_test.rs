@@ -1,59 +1,54 @@
 use assert_cmd::prelude::*; 
-use std::process::Command;
+use std::process::{Command, Output};
+use std::iter::zip;
 
 use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::path::PathBuf;
 use std::fs::{self, ReadDir};
 
-
 #[test]
-fn test_inputs() -> Result<(), Box<dyn std::error::Error>> {
-    // let paths = fs::read_dir("./").unwrap();
-
-    // for path in paths {
-    //     println!("Name: {}", path.unwrap().path().display())
-    // }
-    // let mut test = Command::cargo_bin("drewno_mars")?;
+fn test_inputs() {
     p1();
-    // test.args(&["./tests/input/test1.dm", "-u"]);
-    // test.assert()
-    //     .success();
 
-    Ok(())
 }
 
-fn p1() -> Result<(), Box<dyn std::error::Error>> {
-    let paths = fs::read_dir("./tests/p1").unwrap();
+fn p1() {
+    let tests = &chunk_by_test(fs::read_dir("./tests/p1").unwrap());
 
-    // for path in paths {
-    //     println!("Name: {}", path.unwrap().path().display())
-    // }
+    for t in tests {
+        let mut test = Command::cargo_bin("drewno_mars").unwrap();
+        let input_file = format!("{}/{}.dm", t.directory.to_str().unwrap(), *t.name);
+        let correct_file_path = format!("{}/{}.expected", t.directory.to_str().unwrap(), *t.name);
+        let err_file_path = format!("{}/{}.err", t.directory.to_str().unwrap(), t.name);
 
-    // let mut test = Command::cargo_bin("drewno_mars")?;
+        let correct_input = match std::fs::read_to_string(correct_file_path) {
+            Ok(v) => v,
+            Err(_) => panic!("Unable to read given input file.")
+        };
+        let correct_errs = match std::fs::read_to_string(err_file_path) {
+            Ok(v) => v,
+            Err(_) => panic!("Unable to read given input file.")
+        };
+        test.args(&[input_file.as_str(), "-t"]);
+        let output = test.assert().success();
+        let Output { 
+            stdout: output,
+            stderr: err,
+            ..
+        } = output.get_output();
+        
+        let err = String::from_utf8(err.to_vec()).unwrap();
+        let output = String::from_utf8(output.to_vec()).unwrap();
 
-    // loop {
-    //     let dm = match paths.next() {
-    //         Some(x) => x.unwrap(),
-    //         None => break
-    //     };
-    //     let err = match paths.next() {
-    //         Some(x) => x.unwrap(),
-    //         None => break
-    //     };
-    //     let expected = match paths.next() {
-    //         Some(x) => x.unwrap(),
-    //         None => break
-    //     };
-    //     test.args(&["./tests/input/test1.dm", "-t"]);
-    //     test.assert()
-    //         .success();
-    // }
-    
-    chunk_by_test(paths);
-    
+        for (correct, out) in zip(correct_input.lines(), output.lines()) {
+            assert_eq!(correct, out);
+        }
 
-    Ok(())
+        for (correct, out) in zip(correct_errs.lines(), err.lines()) {
+            assert_eq!(correct, out);
+        }
+    }
 }
 
 
@@ -65,24 +60,10 @@ fn p1() -> Result<(), Box<dyn std::error::Error>> {
 /// 
 /// * `files` - A `ReadDir` of test files. 
 /// 
-/// # Examples
-///
 /// ```
-/// let tests = vec![
-///     "t1.dm", "t2.err", "t1.expected", "t2.dm", 
-///     "t1.expected", "t3.err", "t3.dm", "t3.err", 
-///     "t2.expected",
-/// ];
-/// let tests = chunk_by_test(tests);
-///
-/// assert_eq!(tests, vec![
-///     vec!["t1.dm", "t1.err", "t1.expected"],
-///     vec!["t2.dm", "t2.err", "t2.expected"],
-///     vec!["t3.dm", "t3.err", "t3.expected"],
-/// ]);
-/// ```
-fn chunk_by_test(files: ReadDir) -> HashMap<String, Test> {
-    let mut tests : HashMap<String, Test> = HashMap::new();
+fn chunk_by_test(files: ReadDir) -> Vec<Test> {
+    let mut init_tests : HashMap<String, InitTest> = HashMap::new();
+    let mut tests : Vec<Test> = Vec::new();
 
     for f in files {
         let path = f.unwrap().path();
@@ -94,7 +75,7 @@ fn chunk_by_test(files: ReadDir) -> HashMap<String, Test> {
             Some(x) => x,
             None => continue
         };
-        match tests.get_mut(&name) {
+        match init_tests.get_mut(&name) {
             Some(x) => {
                 match extension {
                     "dm" => x.dm = true,
@@ -102,12 +83,18 @@ fn chunk_by_test(files: ReadDir) -> HashMap<String, Test> {
                     "expected" => x.expected = true,
                     &_ => continue
                 };
+                if x.has_all_files() {
+                    let test = Test {
+                        name: Box::new(name),
+                        directory: path.parent().unwrap().to_path_buf()
+                    };
+                    tests.push(test);
+                }
                 continue;
             },
             None => ()
         };
-        let mut temp = Test {
-            path: path.clone().parent().unwrap().to_path_buf(),
+        let mut temp = InitTest {
             dm: false,
             err: false,
             expected : false
@@ -118,27 +105,29 @@ fn chunk_by_test(files: ReadDir) -> HashMap<String, Test> {
             "expected" => temp.expected = true,
             &_ => continue
         };
-        tests.insert(name.to_string(), temp);
+        init_tests.insert(name.to_string(), temp);
     }
 
-    dbg!(&tests);
     tests
 }
 
 #[derive(Debug)]
 /// A test
-struct Test {
-    path: PathBuf,
+struct InitTest {
     dm: bool,
     err: bool,
     expected: bool
 }
 
-impl Test {
+#[derive(Debug)]
+/// A test
+struct Test {
+    name: Box<String>,
+    directory: PathBuf
+}
+
+impl InitTest {
     fn has_all_files(&self) -> bool {
         self.dm && self.err && self.expected
     }
-    // fn files(&self) -> Vec<String> {
-    //     self.dm && self.err && self.expected
-    // }
 }

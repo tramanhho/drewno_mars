@@ -9,9 +9,4 @@ fn main() {
     });
 
     run(config);
-
-    // if let Err(e) = run(config, mode) {
-    //     eprintln!("Application error: {e}");
-    //     process::exit(1);
-    // }
 }

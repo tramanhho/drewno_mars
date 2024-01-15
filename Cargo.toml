@@ -3,8 +3,6 @@ name = "drewno_mars"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 lalrpop-util = { version = "0.20.0", features = ["lexer", "unicode"] }
 logos = "0.13.0"
@@ -15,4 +13,3 @@ lalrpop = "0.20.0"
 
 [dev-dependencies]
 assert_cmd = "2.0.12"
-predicates = "3.0.4"

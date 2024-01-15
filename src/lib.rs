@@ -133,9 +133,6 @@ pub fn run(config: Config) {
         },
         ProcessMode::ParseCheck => {
             let lexer = Lexer::new(&input[..]);
-            // for token in lexer {
-            //     dbg!(token);
-            // }
             
             match ProgramParser::new().parse(lexer) {
                 Ok(mut x) => {
