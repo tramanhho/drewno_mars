@@ -1,11 +1,8 @@
 <html>
 <head>
-<style>
-.container {text-align: center; }
-</style>
 </head>
 <body>
-<div class="container">
+<div align="center">
 <img src="https://img.shields.io/badge/Rust-v1.75.0-coral?logo=rust" /> &nbsp;&nbsp;&nbsp;&nbsp;
 <img src="https://img.shields.io/badge/Unit%20Tests-Passing-limegreen?logo=github" /> &nbsp;&nbsp;&nbsp;&nbsp;
 <img src="https://img.shields.io/badge/Integration%20Tests-3%2F7%20Passing-orange?logo=github" /> &nbsp;&nbsp;&nbsp;&nbsp;
