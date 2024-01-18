@@ -1,6 +1,0 @@
-FATAL [4,32]-[4,41]: Attempt to output a function
-FATAL [9,32]-[9,41]: Attempt to output a class
-FATAL [14,32]-[14,43]: Attempt to output void
-FATAL [19,31]-[19,39]: Attempt to assign user input to function
-FATAL [24,31]-[24,39]: Attempt to assign user input to class
-Type Analysis Failed

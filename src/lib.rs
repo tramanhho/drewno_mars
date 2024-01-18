@@ -150,8 +150,7 @@ pub fn run(config: Config) {
                 Ok(x) => output
                 .write_all(unparse(x).as_bytes())
                 .expect("Error writing to output file."),
-
-                Err(x) => { eprintln!("Parse failed: {:?}", x); },
+                Err(_) => eprintln!("syntax error")
             };
         },
 

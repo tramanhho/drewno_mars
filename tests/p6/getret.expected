@@ -1,0 +1,30 @@
+[BEGIN GLOBALS]
+
+[END GLOBALS]
+
+[BEGIN meow LOCALS]
+
+[END meow LOCALS]
+
+meow:    enter meow
+        setret 1
+        goto lbl_0
+lbl_0:    leave meow
+
+[BEGIN main LOCALS]
+c-int
+tmp0-int
+tmp1-int
+tmp2-int
+[END main LOCALS]
+
+main:    enter main
+
+        call meow
+        call meow
+        getret [tmp0]
+        [c] := [tmp0]
+        WRITE call meow
+        setret 0
+        goto lbl_1
+lbl_1:    leave main

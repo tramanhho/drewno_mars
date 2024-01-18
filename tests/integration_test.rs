@@ -8,30 +8,56 @@ use std::path::PathBuf;
 use std::fs::{self, ReadDir};
 
 #[test]
-fn test_inputs() {
-    p1();
-
+fn project_1() {
+    test(1);
 }
 
-fn p1() {
-    let tests = &chunk_by_test(fs::read_dir("./tests/p1").unwrap());
+#[test]
+fn project_3() {
+    test(3);
+}
+
+#[test]
+fn project_4() {
+    test(4);
+}
+
+#[test]
+fn project_5() {
+    test(5);
+}
+
+#[test]
+fn project_6() {
+    test(6);
+}
+
+#[test]
+fn project_7() {
+    test(7);
+}
+
+fn test(project: u8) {
+    let tests : &Vec::<Test> = &chunk_by_test(fs::read_dir(format!("./tests/p{}", project)).unwrap());
 
     for t in tests {
-        let mut test = Command::cargo_bin("drewno_mars").unwrap();
-        let input_file = format!("{}/{}.dm", t.directory.to_str().unwrap(), *t.name);
-        let correct_file_path = format!("{}/{}.expected", t.directory.to_str().unwrap(), *t.name);
-        let err_file_path = format!("{}/{}.err", t.directory.to_str().unwrap(), t.name);
+        let mut command = Command::cargo_bin("drewno_mars").unwrap();
+        let directory = t.directory.to_str().unwrap();
 
-        let correct_input = match std::fs::read_to_string(correct_file_path) {
+        let input_file    = format!("{}/{}.dm",       directory, *t.name);
+        let correct_input = format!("{}/{}.expected", directory, *t.name);
+        let correct_errs  = format!("{}/{}.err",      directory, *t.name);
+
+        let correct_input = match std::fs::read_to_string(correct_input) {
             Ok(v) => v,
             Err(_) => panic!("Unable to read given input file.")
         };
-        let correct_errs = match std::fs::read_to_string(err_file_path) {
+        let correct_errs = match std::fs::read_to_string(correct_errs) {
             Ok(v) => v,
             Err(_) => panic!("Unable to read given input file.")
         };
-        test.args(&[input_file.as_str(), "-t"]);
-        let output = test.assert().success();
+        command.args(&[input_file.as_str(), option_from_project(project)]);
+        let output = command.assert().success();
         let Output { 
             stdout: output,
             stderr: err,
@@ -40,17 +66,29 @@ fn p1() {
         
         let err = String::from_utf8(err.to_vec()).unwrap();
         let output = String::from_utf8(output.to_vec()).unwrap();
-
+        
         for (correct, out) in zip(correct_input.lines(), output.lines()) {
-            assert_eq!(correct, out);
+            assert_eq!(correct.replace("\t", "    ").trim(), out.replace("\t", "    ").trim());
         }
 
         for (correct, out) in zip(correct_errs.lines(), err.lines()) {
-            assert_eq!(correct, out);
+            assert_eq!(correct.trim(), out.trim());
         }
     }
 }
 
+fn option_from_project(project: u8) -> &'static str {
+    match project {
+        1 => "-t",
+        2 => "-p",
+        3 => "-u",
+        4 => "-n",
+        5 => "-c",
+        6 => "-a",
+        7 => "-o",
+        _ => "-t"
+    }
+}
 
 /// Chunks an array of test files into vectors for each individual test. Each set of test files should contain
 /// three filetypes: `.dm`, `.err`, and `.expected`. They do not have to be in order

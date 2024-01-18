@@ -70,7 +70,7 @@ impl Display for ClassDecl {
 
 impl Display for FnDecl {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-        write!(fmt, r#"{} : ({}) {} {{\n{}}}\n"#, &self.id, fmt_vec_commas(&self.args), &self.ret, fmt_vec(&self.body))
+        write!(fmt, "{} : ({}) {}  {{\n{}}}\n", &self.id, fmt_vec_commas(&self.args), &self.ret, fmt_vec(&self.body))
     }
 }
 
@@ -99,9 +99,9 @@ impl Display for BlockStmt {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
         use BlockStmt::*;
         match self {
-            While{cond, body} => write!(fmt, "while ({}) {{\n{}}}\n", cond, fmt_vec(body)),
-            If{cond, body} => write!(fmt, "if ({}) {{\n{}}}\n", cond, fmt_vec(body)),
-            IfElse{cond, true_branch, false_branch} => write!(fmt, "if ({}) {{\n{}}}\nelse {{\n{}}}\n", cond, fmt_vec(true_branch), fmt_vec(false_branch)),
+            While{cond, body} => write!(fmt, "while ({}){{\n{}}}\n", cond, fmt_vec(body)),
+            If{cond, body} => write!(fmt, "if ({}){{\n{}}}\n", cond, fmt_vec(body)),
+            IfElse{cond, true_branch, false_branch} => write!(fmt, "if ({}){{\n{}}}\nelse{{\n{}}}\n", cond, fmt_vec(true_branch), fmt_vec(false_branch)),
         }
     }
 }

@@ -284,7 +284,7 @@ impl TypeAnalyzer {
 			CallNonFn 		=> eprintln!("FATAL {span}: Attempt to call a non-function"), 
 			FnWrongArgNum 	=> eprintln!("FATAL {span}: Function call with wrong number of args"), 
 			FnWrongArgType 	=> eprintln!("FATAL {span}: Type of actual does not match type of formal"), 
-			ReturnMissing	=> eprintln!("FATAL {span}: Missing return value "), 
+			ReturnMissing	=> eprintln!("FATAL {span}: Missing return value"), 
 			ReturnVoid 		=> eprintln!("FATAL {span}: Return with a value in void function"), 
 			ReturnBad 	  	=> eprintln!("FATAL {span}: Bad return value"), 
 			WrongOpMath  	=> eprintln!("FATAL {span}: Arithmetic operator applied to invalid operand"), 

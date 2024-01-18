@@ -1,0 +1,57 @@
+[BEGIN GLOBALS]
+
+[END GLOBALS]
+
+[BEGIN main LOCALS]
+b-bool
+i-int
+tmp0-bool
+tmp1-bool
+tmp2-int
+tmp3-int
+tmp4-int
+tmp5-int
+tmp6-int
+tmp7-int
+tmp8-int
+tmp9-int
+tmp10-int
+tmp11-int
+tmp12-int
+tmp13-int
+tmp14-int
+tmp15-int
+[END main LOCALS]
+
+main:    enter main
+        [tmp0] := true OR64 false
+        [tmp1] := NOT64 [tmp0]
+        [b] := [tmp1]
+        [b] := 24Kmagic
+        WRITE b
+        [tmp2] := 1 ADD64 3
+        [tmp3] := NEG64 [tmp2]
+        [i] := [tmp3]
+        WRITE i
+        [tmp4] := 1 SUB64 3
+        [tmp5] := NEG64 [tmp4]
+        [i] := [tmp5]
+        [tmp6] := 1 MULT64 3
+        [tmp7] := NEG64 [tmp6]
+        [i] := [tmp7]
+        [tmp8] := 1 DIV64 3
+        [tmp9] := NEG64 [tmp8]
+        [i] := [tmp9]
+        [tmp10] := 1 EQ64 3
+        [b] := [tmp10]
+        [tmp11] := 1 NEQ64 3
+        [b] := [tmp11]
+        [tmp12] := 1 LT64 3
+        [b] := [tmp12]
+        [tmp13] := 1 LTE64 3
+        [b] := [tmp13]
+        [tmp14] := 1 GT64 3
+        [b] := [tmp14]
+        [tmp15] := 1 GTE64 3
+        [b] := [tmp15]
+lbl_0:    leave main

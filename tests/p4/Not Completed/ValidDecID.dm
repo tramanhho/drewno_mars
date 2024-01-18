@@ -8,7 +8,7 @@ decl2fn : (a : int, b: bool ) void {
     decl2 : int = 2;
 }
 
-//gobal dec, fn assignment
+//global dec, fn assignment
 decl3 : int;
 decl3fn : (  ) void { 
     decl3 = 3;

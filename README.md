@@ -1,6 +1,17 @@
+<html>
+
+<center>
+
+<img src="https://img.shields.io/badge/Rust-v1.75.0-coral?logo=rust" /> &nbsp;&nbsp;&nbsp;&nbsp;
+<img src="https://img.shields.io/badge/Unit%20Tests-Passing-limegreen?logo=github" /> &nbsp;&nbsp;&nbsp;&nbsp;
+<img src="https://img.shields.io/badge/Integration%20Tests-3%2F7%20Passing-orange?logo=github" /> &nbsp;&nbsp;&nbsp;&nbsp;
+<img src="https://img.shields.io/badge/codecov-77.20%25-orange?logo=codecov" />
+</center>
+</html>
+
 ## About
 
-This project is a compiler written in Rust for a C++-like toy language. This compiles down to x86 Assembly. 
+Drewno Mars is a C++-like toy language that supports a variety of features, like console input/output, functions, multiple variable types, loops, and more. It is built in Rust to front-load processing time to compilation, which maximizes runtime efficiency. 
 
 ## Language Specifications
 
@@ -94,4 +105,15 @@ main : () void {
 
 ## Language Implementation
 
-Scanning and Parsing is done with a combination of [Logos](https://docs.rs/logos/latest/logos/) and [LALRPOP](http://lalrpop.github.io/lalrpop/). Type/Name Analysis is static. 
+Scanning and Parsing is done with a combination of [Logos](https://docs.rs/logos/latest/logos/) and [LALRPOP](http://lalrpop.github.io/lalrpop/). Type/Name Analysis is static and covers a variety of errors, including but not limited to: 
+
+* Invalid/Multiple declarations
+* Accessing an undeclared variable
+* Incompatible types in operations 
+* Missing/incompatible return types
+* Invalid arguments in function calls
+
+Drewno Mars compiles down to x86 Assembly, and utilizes libc function to implement console input/output, as well as random bool generation.
+
+## Acknowledgements
+- Drew Davidson for generating the template languages specifications and libc integrations under `stddrewno_mars.c`

@@ -1,1 +1,1 @@
-a : perfect bool = !(!false);
+a : perfect bool = !!false;

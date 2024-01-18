@@ -1,0 +1,39 @@
+[BEGIN GLOBALS]
+str0 "hewwo"
+[END GLOBALS]
+
+[BEGIN meow LOCALS]
+
+[END meow LOCALS]
+
+meow:    enter meow
+        setret 1
+        goto lbl_0
+lbl_0:    leave meow
+
+[BEGIN main LOCALS]
+b-bool
+i-int
+c-int
+tmp0-int
+tmp1-int
+tmp2-int
+[END main LOCALS]
+
+main:    enter main
+        [b] := true
+        [i] := [i] SUB64 1
+        [i] := [i] ADD64 1
+        WRITE str0
+        READ [i]
+        exit
+
+        call meow
+        call meow
+        getret [tmp0]
+        [c] := [tmp0]
+        call meow
+        getret [tmp1]
+        setret [tmp1]
+        goto lbl_1
+lbl_1:    leave main

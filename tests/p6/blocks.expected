@@ -1,0 +1,39 @@
+[BEGIN GLOBALS]
+i-int
+j-int
+str0 "what in the world...."
+[END GLOBALS]
+
+[BEGIN main LOCALS]
+c-int
+counter-int
+a-bool
+tmp0-int
+tmp1-int
+tmp2-int
+tmp3-int
+tmp4-int
+[END main LOCALS]
+
+main:    enter main
+        [i] := 1
+        [j] := 2
+        IFZ true goto lbl_1
+        WRITE str0
+    
+lbl_1:    nop
+        [counter] := 0
+
+lbl_2:    nop
+        [tmp0] := [counter] LT64 10
+        IFZ [tmp0] goto lbl_3
+        [tmp1] := [i] MULT64 [j]
+        [tmp2] := [c] ADD64 [tmp1]
+        [tmp3] := [tmp2] SUB64 3
+        [tmp4] := [tmp3] ADD64 1
+        [c] := [tmp4]
+        [counter] := [counter] SUB64 1
+        goto lbl_2
+
+lbl_3:    nop
+lbl_0:    leave main

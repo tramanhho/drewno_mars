@@ -34,7 +34,7 @@ impl Display for Span {
 
 impl Display for Position {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        write!(f, "[{}, {}]", self.row, self.col)
+        write!(f, "[{},{}]", self.row, self.col)
     }
 }
 

@@ -1,7 +1,7 @@
 
 pub fn add_tabs(input: String) -> String {
     let text = input.lines();
-    let mut output : String = "".to_string();
+    let mut output : Vec<String> = Vec::new();
     let mut tabs = 0;
 
     for mut line in text {
@@ -17,7 +17,7 @@ pub fn add_tabs(input: String) -> String {
             None => (),
         }
 
-        output.push_str(&"    ".repeat(tabs));
+        let line = format!("{}{}", "    ".repeat(tabs), line);
 
         match last_char {
             Some(x) => match x {
@@ -26,10 +26,7 @@ pub fn add_tabs(input: String) -> String {
             },
             None => (),
         }
-
-        output.push_str(&line);
-        output.push_str("\n");
+        output.push(line.to_owned());
     }
-
-    output
+    output.join("\n")
 }

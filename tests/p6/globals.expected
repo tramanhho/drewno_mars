@@ -1,0 +1,32 @@
+[BEGIN GLOBALS]
+i-int
+j-int
+str0 "\n"
+[END GLOBALS]
+
+[BEGIN main LOCALS]
+c-int
+tmp0-int
+tmp1-int
+tmp2-int
+tmp3-int
+tmp4-int
+tmp5-int
+tmp6-int
+tmp7-int
+[END main LOCALS]
+
+main:    enter main
+        [i] := 1
+        [tmp0] := NEG64 [i]
+        [tmp1] := [tmp0] MULT64 1
+        [tmp2] := [tmp1] DIV64 2
+        [tmp3] := [tmp2] ADD64 3
+        [tmp4] := 4 MULT64 5
+        [tmp5] := [tmp3] SUB64 [tmp4]
+        [tmp6] := 6 DIV64 7
+        [tmp7] := [tmp5] ADD64 [tmp6]
+        [c] := [tmp7]
+        WRITE c
+        WRITE str0
+lbl_0:    leave main

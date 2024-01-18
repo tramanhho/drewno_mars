@@ -1,0 +1,21 @@
+[BEGIN GLOBALS]
+
+[END GLOBALS]
+
+[BEGIN main LOCALS]
+a-bool
+[END main LOCALS]
+
+main:    enter main
+        [a] := 24Kmagic
+        IFZ [a] goto lbl_2
+        WRITE 1
+        goto lbl_1
+
+lbl_2:    nop
+        WRITE 0
+
+lbl_1:    nop
+        setret 0
+        goto lbl_0
+lbl_0:    leave main
